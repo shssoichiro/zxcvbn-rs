@@ -1,0 +1,21 @@
+[package]
+authors = ["Josh Holmer <jholmer.in@gmail.com>"]
+name = "zxcvbn"
+version = "0.1.0"
+
+[dependencies]
+derive_builder = "0.2.1"
+itertools = "0.5.7"
+lazy_static = "0.2.2"
+macro-attr = "0.2.0"
+quick-error = "1.1.0"
+regex = "0.1.80"
+time = "0.1.35"
+
+[dependencies.clippy]
+optional = true
+version = ">=0.0.100"
+
+[features]
+default = []
+unstable = ["regex/simd-accel", "lazy_static/nightly"]
