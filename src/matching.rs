@@ -19,6 +19,13 @@ macro_attr! {
         pub sub_display: Option<String>,
         pub turns: Option<usize>,
         pub shifted_count: Option<usize>,
+        pub base_token: Option<String>,
+        pub base_matches: Option<Vec<String>>,
+        pub base_guesses: Option<u64>,
+        pub repeat_count: Option<usize>,
+        pub sequence_name: Option<&'static str>,
+        pub sequence_space: Option<u8>,
+        pub ascending: Option<bool>,
     }
 }
 
@@ -29,9 +36,7 @@ impl Match {
 }
 
 #[doc(hidden)]
-pub fn omnimatch(password: &str, user_inputs: &Option<Vec<String>>) -> Vec<Match> {
-    let user_inputs = user_inputs.clone()
-        .map(|items| items.iter().enumerate().map(|(i, x)| (x.clone(), i + 1)).collect());
+pub fn omnimatch(password: &str, user_inputs: &Option<HashMap<String, usize>>) -> Vec<Match> {
     MATCHERS.iter()
         .flat_map(|x| x.get_matches(password, &user_inputs))
         .sorted_by(|a, b| Ord::cmp(&a.i, &b.i))
@@ -351,9 +356,65 @@ impl Matcher for RepeatMatch {
                    password: &str,
                    user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        unimplemented!()
+        let mut matches = Vec::new();
+        let mut last_index = 0;
+        while last_index < password.len() {
+            let greedy_matches = GREEDY_REGEX.captures(&password[last_index..]);
+            let lazy_matches = LAZY_REGEX.captures(&password[last_index..]);
+            if greedy_matches.is_none() {
+                break;
+            }
+            let greedy_matches = greedy_matches.unwrap();
+            let lazy_matches = lazy_matches.unwrap();
+            let mut m4tch;
+            let mut base_token;
+            if greedy_matches.len() > lazy_matches.len() {
+                // greedy beats lazy for 'aabaab'
+                //   greedy: [aabaab, aab]
+                //   lazy:   [aa,     a]
+                m4tch = greedy_matches;
+                // greedy's repeated string might itself be repeated, eg.
+                // aabaab in aabaabaabaab.
+                // run an anchored lazy match on greedy's repeated string
+                // to find the shortest repeated string
+                base_token = LAZY_ANCHORED_REGEX.captures(&m4tch[1]).unwrap()[1].to_string();
+            } else {
+                // lazy beats greedy for 'aaaaa'
+                //   greedy: [aaaa,  aa]
+                //   lazy:   [aaaaa, a]
+                m4tch = lazy_matches;
+                base_token = m4tch[1].to_string();
+            }
+            let (i, j) = (m4tch.pos(0).unwrap().0, m4tch.pos(0).unwrap().0 + m4tch[0].len() - 1);
+            // recursively match and score the base string
+            let base_analysis =
+                super::scoring::most_guessable_match_sequence(&base_token,
+                                                              &omnimatch(&base_token, user_inputs));
+            let base_matches = base_analysis.sequence;
+            let base_guesses = base_analysis.guesses;
+            matches.push(Match::default()
+                .pattern("repeat")
+                .i(i)
+                .j(j)
+                .token(m4tch[0].to_string())
+                .repeat_count(m4tch[0].len() / base_token.len())
+                .base_token(base_token)
+                .base_guesses(base_guesses)
+                .base_matches(base_matches)
+                .build());
+            last_index = j + 1;
+        }
+        matches
     }
 }
+
+lazy_static! {
+    static ref GREEDY_REGEX: Regex = Regex::new(r"(.+)\1+").unwrap();
+    static ref LAZY_REGEX: Regex = Regex::new(r"(.+?)\1+").unwrap();
+    static ref LAZY_ANCHORED_REGEX: Regex = Regex::new(r"^(.+?)\1+$").unwrap();
+}
+
+const MAX_DELTA: i32 = 5;
 
 struct SequenceMatch {}
 
@@ -362,7 +423,76 @@ impl Matcher for SequenceMatch {
                    password: &str,
                    user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        unimplemented!()
+        // Identifies sequences by looking for repeated differences in unicode codepoint.
+        // this allows skipping, such as 9753, and also matches some extended unicode sequences
+        // such as Greek and Cyrillic alphabets.
+        //
+        // for example, consider the input 'abcdb975zy'
+        //
+        // password: a   b   c   d   b    9   7   5   z   y
+        // index:    0   1   2   3   4    5   6   7   8   9
+        // delta:        1   1   1  -2  -41  -2  -2  69   1
+        //
+        // expected result:
+        // [(i, j, delta), ...] = [(0, 3, 1), (5, 7, -2), (8, 9, 1)]
+
+        fn update(i: usize, j: usize, delta: i32, password: &str, matches: &mut Vec<Match>) {
+            let delta_abs = delta.abs();
+            if (j - i > 1 || delta_abs == 1) && (0 < delta_abs && delta_abs <= MAX_DELTA) {
+                let token = &password[i..j];
+                let mut sequence_name;
+                let mut sequence_space;
+                if token.chars().any(char::is_lowercase) {
+                    sequence_name = "lower";
+                    sequence_space = 26;
+                } else if token.chars().any(char::is_uppercase) {
+                    sequence_name = "upper";
+                    sequence_space = 26;
+                } else if token.chars().any(|c| c.is_digit(10)) {
+                    sequence_name = "digits";
+                    sequence_space = 10;
+                } else {
+                    // conservatively stick with roman alphabet size.
+                    // (this could be improved)
+                    sequence_name = "unicode";
+                    sequence_space = 26;
+                }
+                matches.push(Match::default()
+                    .pattern("sequence")
+                    .i(i)
+                    .j(j)
+                    .token(token.to_string())
+                    .sequence_name(sequence_name)
+                    .sequence_space(sequence_space)
+                    .ascending(Some(delta > 0))
+                    .build());
+            }
+        }
+
+        let mut matches = Vec::new();
+
+        if password.len() <= 1 {
+            return matches;
+        }
+
+        let mut i = 0;
+        let mut j = 0;
+        let mut last_delta = 0;
+
+        for k in 1..(password.len() + 1) {
+            let delta = password[k..(k + 1)].chars().next().unwrap() as i32 -
+                        password[(k - 1)..k].chars().next().unwrap() as i32;
+            if last_delta == 0 {
+                last_delta = delta;
+                continue;
+            }
+            j = k - 1;
+            update(i, j, last_delta, password, &mut matches);
+            i = j;
+            last_delta = delta;
+        }
+        update(i, password.len() - 1, last_delta, password, &mut matches);
+        matches
     }
 }
 

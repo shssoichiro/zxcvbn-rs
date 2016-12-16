@@ -64,8 +64,13 @@ pub struct Entropy {
 ///
 /// Currently zxcvbn only supports ASCII input. Non-ASCII passwords can generally be considered
 /// to be safe, if they are of a reasonable length (8+ chars), so you should handle them as
-/// strong passwords, but this library is not able to generate entropy information for them.
+/// strong passwords, but this library is not able to generate entropy information for them
+/// at this time.
 pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
+    if password.is_empty() {
+        return None;
+    }
+
     if !password.is_ascii() {
         return None;
     }
@@ -81,7 +86,7 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
     };
 
     let sanitized_inputs =
-        user_inputs.map(|x| x.iter().map(|i| i.to_lowercase()).collect::<Vec<String>>());
+        user_inputs.map(|x| x.iter().enumerate().map(|(i, x)| (x.to_lowercase(), i + 1)).collect());
 
     let matches = matching::omnimatch(password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(password, &matches);
