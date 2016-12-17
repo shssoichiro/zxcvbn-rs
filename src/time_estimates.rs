@@ -1,3 +1,6 @@
+//! Contains structs and methods for calculating estimated time
+//! needed to crack a given password.
+
 /// Back-of-the-envelope crack time estimations, in seconds, based on a few scenarios
 #[derive(Debug, Clone, Copy)]
 pub struct CrackTimes {

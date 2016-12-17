@@ -1,3 +1,6 @@
+//! Contains structs and methods related to generating feedback strings
+//! for providing help for the user to generate stronger passwords.
+
 /// Verbal feedback to help choose better passwords
 #[derive(Debug, Clone)]
 pub struct Feedback {

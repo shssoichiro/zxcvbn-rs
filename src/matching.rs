@@ -43,7 +43,7 @@ impl Match {
 #[doc(hidden)]
 pub fn omnimatch(password: &str, user_inputs: &Option<HashMap<String, usize>>) -> Vec<Match> {
     MATCHERS.iter()
-        .flat_map(|x| x.get_matches(password, &user_inputs))
+        .flat_map(|x| x.get_matches(password, user_inputs))
         .sorted_by(|a, b| Ord::cmp(&a.i, &b.i))
         .into_iter()
         .sorted_by(|a, b| Ord::cmp(&a.j, &b.j))
@@ -130,11 +130,11 @@ impl Matcher for DictionaryMatch {
         let mut matches = Vec::new();
 
         for (dictionary_name, ranked_dict) in super::frequency_lists::RANKED_DICTIONARIES.iter() {
-            do_trials(&mut matches, &password, dictionary_name, ranked_dict);
+            do_trials(&mut matches, password, dictionary_name, ranked_dict);
         }
-        if let &Some(ref inputs) = user_inputs {
+        if let Some(ref inputs) = *user_inputs {
             do_trials(&mut matches,
-                      &password,
+                      password,
                       "user_inputs",
                       &inputs.iter().map(|(x, &i)| (x.as_str(), i)).collect());
         }
@@ -197,7 +197,7 @@ impl Matcher for L33tMatch {
                 matches.push(m4tch);
             }
         }
-        matches.into_iter().filter(|ref x| !x.token.is_empty()).collect()
+        matches.into_iter().filter(|x| !x.token.is_empty()).collect()
     }
 }
 
@@ -232,8 +232,8 @@ fn enumerate_l33t_replacements(table: &HashMap<char, Vec<char>>) -> Vec<HashMap<
         for l33t_chr in &table[first_key] {
             for sub in &subs {
                 let mut dup_l33t_index = None;
-                for i in 0..(sub.len() + 1) {
-                    if sub[i].0 == *l33t_chr {
+                for (i, item) in sub.iter().enumerate() {
+                    if item.0 == *l33t_chr {
                         dup_l33t_index = Some(i);
                         break;
                     }
@@ -269,7 +269,7 @@ struct SpatialMatch {}
 impl Matcher for SpatialMatch {
     fn get_matches(&self,
                    password: &str,
-                   user_inputs: &Option<HashMap<String, usize>>)
+                   _user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
         GRAPHS.iter()
             .flat_map(|(graph_name, graph)| spatial_match_helper(password, graph, graph_name))
@@ -300,9 +300,9 @@ fn spatial_match_helper(password: &str,
         loop {
             let prev_char = password[j - 1..j].chars().next().unwrap();
             let mut found = false;
-            let mut found_direction = -1;
+            let found_direction;
             let mut cur_direction = -1;
-            let mut adjacents = graph.get(&prev_char).cloned().unwrap_or_else(|| vec![]);
+            let adjacents = graph.get(&prev_char).cloned().unwrap_or_else(|| vec![]);
             // consider growing pattern by one character if j hasn't gone over the edge.
             if j < password.len() {
                 let cur_char = password[j..(j + 1)].chars().next().unwrap();
@@ -372,9 +372,8 @@ impl Matcher for RepeatMatch {
             }
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
-            let mut m4tch;
-            let mut base_token;
-            if greedy_matches.len() > lazy_matches.len() {
+            let m4tch;
+            let base_token = if greedy_matches.len() > lazy_matches.len() {
                 // greedy beats lazy for 'aabaab'
                 //   greedy: [aabaab, aab]
                 //   lazy:   [aa,     a]
@@ -383,14 +382,14 @@ impl Matcher for RepeatMatch {
                 // aabaab in aabaabaabaab.
                 // run an anchored lazy match on greedy's repeated string
                 // to find the shortest repeated string
-                base_token = LAZY_ANCHORED_REGEX.captures(&m4tch[1]).unwrap()[1].to_string();
+                LAZY_ANCHORED_REGEX.captures(&m4tch[1]).unwrap()[1].to_string()
             } else {
                 // lazy beats greedy for 'aaaaa'
                 //   greedy: [aaaa,  aa]
                 //   lazy:   [aaaaa, a]
                 m4tch = lazy_matches;
-                base_token = m4tch[1].to_string();
-            }
+                m4tch[1].to_string()
+            };
             let (i, j) = (m4tch.pos(0).unwrap().0, m4tch.pos(0).unwrap().0 + m4tch[0].len() - 1);
             // recursively match and score the base string
             let base_analysis =
@@ -439,14 +438,14 @@ struct SequenceMatch {}
 impl Matcher for SequenceMatch {
     fn get_matches(&self,
                    password: &str,
-                   user_inputs: &Option<HashMap<String, usize>>)
+                   _user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
         fn update(i: usize, j: usize, delta: i32, password: &str, matches: &mut Vec<Match>) {
             let delta_abs = delta.abs();
             if (j - i > 1 || delta_abs == 1) && (0 < delta_abs && delta_abs <= MAX_DELTA) {
                 let token = &password[i..j];
-                let mut sequence_name;
-                let mut sequence_space;
+                let sequence_name;
+                let sequence_space;
                 if token.chars().any(char::is_lowercase) {
                     sequence_name = "lower";
                     sequence_space = 26;
@@ -481,7 +480,7 @@ impl Matcher for SequenceMatch {
         }
 
         let mut i = 0;
-        let mut j = 0;
+        let mut j;
         let mut last_delta = 0;
 
         for k in 1..(password.len() + 1) {
@@ -506,7 +505,7 @@ struct RegexMatch {}
 impl Matcher for RegexMatch {
     fn get_matches(&self,
                    password: &str,
-                   user_inputs: &Option<HashMap<String, usize>>)
+                   _user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
         let mut matches = Vec::new();
         for (&name, regex) in REGEXES.iter() {
@@ -556,7 +555,7 @@ struct DateMatch {}
 impl Matcher for DateMatch {
     fn get_matches(&self,
                    password: &str,
-                   user_inputs: &Option<HashMap<String, usize>>)
+                   _user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
         let mut matches = Vec::new();
 
@@ -611,7 +610,7 @@ impl Matcher for DateMatch {
                     break;
                 }
                 let token = &password[i..j];
-                let captures = MAYBE_DATE_NO_SEPARATOR_REGEX.captures(token);
+                let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(token);
                 if captures.is_none() {
                     continue;
                 }
@@ -640,7 +639,7 @@ impl Matcher for DateMatch {
         }
 
         matches.iter()
-            .filter(|&x| !matches.iter().any(|ref y| *x != **y && y.i <= x.i && y.j >= x.j))
+            .filter(|&x| !matches.iter().any(|y| *x != *y && y.i <= x.i && y.j >= x.j))
             .cloned()
             .collect()
     }
