@@ -94,7 +94,7 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
     let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
     let (attack_times, attack_times_display, score) =
         time_estimates::estimate_attack_times(result.guesses);
-    let feedback = feedback::get_feedback(result.score, &result.sequence);
+    let feedback = feedback::get_feedback(result.score, &matches);
 
     Some(Entropy {
         guesses: result.guesses,

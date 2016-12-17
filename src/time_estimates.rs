@@ -65,9 +65,9 @@ fn display_time(seconds: u64) -> String {
     const MINUTE: u64 = 60;
     const HOUR: u64 = MINUTE * 60;
     const DAY: u64 = HOUR * 24;
-    const MONTH:u64  = DAY * 31;
-    const YEAR:u64 = MONTH * 12;
-    const CENTURY:u64 = YEAR * 100;
+    const MONTH: u64 = DAY * 31;
+    const YEAR: u64 = MONTH * 12;
+    const CENTURY: u64 = YEAR * 100;
     if seconds < 1 {
         "less than a second".to_string()
     } else if seconds < MINUTE {
