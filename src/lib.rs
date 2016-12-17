@@ -92,7 +92,7 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
     let matches = matching::omnimatch(password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(password, &matches);
     let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
-    let (attack_times, attack_times_display) =
+    let (attack_times, attack_times_display, score) =
         time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(result.score, &result.sequence);
 
@@ -101,7 +101,7 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
         guesses_log10: result.guesses_log10,
         crack_times_seconds: attack_times,
         crack_times_display: attack_times_display,
-        score: result.score,
+        score: score,
         feedback: feedback,
         sequence: result.sequence,
         calc_time: calc_time,
