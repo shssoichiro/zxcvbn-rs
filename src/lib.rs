@@ -12,6 +12,7 @@
 //! "passwords must contain three of {lower, upper, numbers, symbols}".
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
+#![recursion_limit="128"]
 #![warn(missing_docs)]
 
 #[macro_use]

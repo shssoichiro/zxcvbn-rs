@@ -12,6 +12,9 @@ pub struct GuessCalculation {
 }
 
 #[doc(hidden)]
+pub const REFERENCE_YEAR: i16 = 2000;
+
+#[doc(hidden)]
 pub fn most_guessable_match_sequence(password: &str,
                                      matches: &[super::matching::Match])
                                      -> GuessCalculation {

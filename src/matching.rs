@@ -3,7 +3,7 @@ use regex::Regex;
 use std::collections::HashMap;
 
 macro_attr! {
-    #[derive(Debug, Clone, Default, Builder!)]
+    #[derive(Debug, Clone, Default, PartialEq, Builder!)]
     pub struct Match {
         pub pattern: &'static str,
         pub i: usize,
@@ -26,6 +26,11 @@ macro_attr! {
         pub sequence_name: Option<&'static str>,
         pub sequence_space: Option<u8>,
         pub ascending: Option<bool>,
+        pub regex_name: Option<&'static str>,
+        pub separator: Option<String>,
+        pub year: Option<i16>,
+        pub month: Option<i8>,
+        pub day: Option<i8>,
     }
 }
 
@@ -286,17 +291,18 @@ fn spatial_match_helper(password: &str,
         let mut j = i + 1;
         let mut last_direction = None;
         let mut turns = 0;
-        let mut shifted_count = 0;
-        if ["qwerty", "dvorak"].contains(&graph_name) &&
-           SHIFTED_REGEX.is_match(&password[i..(i + 1)]) {
-            shifted_count = 1;
-        }
+        let mut shifted_count = if ["qwerty", "dvorak"].contains(&graph_name) &&
+                                   SHIFTED_REGEX.is_match(&password[i..(i + 1)]) {
+            1
+        } else {
+            0
+        };
         loop {
             let prev_char = password[j - 1..j].chars().next().unwrap();
             let mut found = false;
             let mut found_direction = -1;
             let mut cur_direction = -1;
-            let mut adjacents = graph.get(&prev_char).cloned().unwrap_or(vec![]);
+            let mut adjacents = graph.get(&prev_char).cloned().unwrap_or_else(|| vec![]);
             // consider growing pattern by one character if j hasn't gone over the edge.
             if j < password.len() {
                 let cur_char = password[j..(j + 1)].chars().next().unwrap();
@@ -416,6 +422,18 @@ lazy_static! {
 
 const MAX_DELTA: i32 = 5;
 
+/// Identifies sequences by looking for repeated differences in unicode codepoint.
+/// this allows skipping, such as 9753, and also matches some extended unicode sequences
+/// such as Greek and Cyrillic alphabets.
+///
+/// for example, consider the input 'abcdb975zy'
+///
+/// password: a   b   c   d   b    9   7   5   z   y
+/// index:    0   1   2   3   4    5   6   7   8   9
+/// delta:        1   1   1  -2  -41  -2  -2  69   1
+///
+/// expected result:
+/// `[(i, j, delta), ...] = [(0, 3, 1), (5, 7, -2), (8, 9, 1)]`
 struct SequenceMatch {}
 
 impl Matcher for SequenceMatch {
@@ -423,19 +441,6 @@ impl Matcher for SequenceMatch {
                    password: &str,
                    user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        // Identifies sequences by looking for repeated differences in unicode codepoint.
-        // this allows skipping, such as 9753, and also matches some extended unicode sequences
-        // such as Greek and Cyrillic alphabets.
-        //
-        // for example, consider the input 'abcdb975zy'
-        //
-        // password: a   b   c   d   b    9   7   5   z   y
-        // index:    0   1   2   3   4    5   6   7   8   9
-        // delta:        1   1   1  -2  -41  -2  -2  69   1
-        //
-        // expected result:
-        // [(i, j, delta), ...] = [(0, 3, 1), (5, 7, -2), (8, 9, 1)]
-
         fn update(i: usize, j: usize, delta: i32, password: &str, matches: &mut Vec<Match>) {
             let delta_abs = delta.abs();
             if (j - i > 1 || delta_abs == 1) && (0 < delta_abs && delta_abs <= MAX_DELTA) {
@@ -503,10 +508,49 @@ impl Matcher for RegexMatch {
                    password: &str,
                    user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        unimplemented!()
+        let mut matches = Vec::new();
+        for (&name, regex) in REGEXES.iter() {
+            for capture in regex.captures_iter(password) {
+                let token = &capture[0];
+                matches.push(Match::default()
+                    .pattern("regex")
+                    .token(token.to_string())
+                    .i(capture.pos(0).unwrap().0)
+                    .j(capture.pos(0).unwrap().1)
+                    .regex_name(Some(name))
+                    .build());
+            }
+        }
+        matches
     }
 }
 
+lazy_static! {
+    static ref REGEXES: HashMap<&'static str, Regex> = {
+        let mut table = HashMap::with_capacity(1);
+        table.insert("recent_year", Regex::new(r"19\d\d|200\d|201\d").unwrap());
+        table
+    };
+}
+
+/// a "date" is recognized as:
+///   any 3-tuple that starts or ends with a 2- or 4-digit year,
+///   with 2 or 0 separator chars (1.1.91 or 1191),
+///   maybe zero-padded (01-01-91 vs 1-1-91),
+///   a month between 1 and 12,
+///   a day between 1 and 31.
+///
+/// note: this isn't true date parsing in that "feb 31st" is allowed,
+/// this doesn't check for leap years, etc.
+///
+/// recipe:
+/// start with regex to find maybe-dates, then attempt to map the integers
+/// onto month-day-year to filter the maybe-dates into dates.
+/// finally, remove matches that are substrings of other matches to reduce noise.
+///
+/// note: instead of using a lazy or greedy regex to find many dates over the full string,
+/// this uses a ^...$ regex against every substring of the password -- less performant but leads
+/// to every possible date match.
 struct DateMatch {}
 
 impl Matcher for DateMatch {
@@ -514,6 +558,205 @@ impl Matcher for DateMatch {
                    password: &str,
                    user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        unimplemented!()
+        let mut matches = Vec::new();
+
+        // dates without separators are between length 4 '1191' and 8 '11111991'
+        for i in 0..(password.len() - 4) {
+            for j in (i + 3)..(i + 7) {
+                if j >= password.len() {
+                    break;
+                }
+                let token = &password[i..j];
+                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(token) {
+                    continue;
+                }
+                let mut candidates = Vec::new();
+                for &(k, l) in &DATE_SPLITS[&token.len()] {
+                    let ymd = map_ints_to_ymd(token[0..(k + 1)].parse().unwrap(),
+                                              token[k..(l + 1)].parse().unwrap(),
+                                              token[l..].parse().unwrap());
+                    if ymd.is_some() {
+                        candidates.push(ymd.unwrap());
+                    }
+                }
+                if candidates.is_empty() {
+                    continue;
+                }
+                // at this point: different possible ymd mappings for the same i,j substring.
+                // match the candidate date that likely takes the fewest guesses: a year closest to 2000.
+                // (scoring.REFERENCE_YEAR).
+                //
+                // ie, considering '111504', prefer 11-15-04 to 1-1-1504
+                // (interpreting '04' as 2004)
+                let metric =
+                    |candidate: &(i16, i8, i8)| candidate.0 - super::scoring::REFERENCE_YEAR;
+                let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
+                matches.push(Match::default()
+                    .pattern("date")
+                    .token(token.to_string())
+                    .i(i)
+                    .j(j)
+                    .separator("".to_string())
+                    .year(best_candidate.0)
+                    .month(best_candidate.1)
+                    .day(best_candidate.2)
+                    .build());
+            }
+        }
+
+        // dates with separators are between length 6 '1/1/91' and 10 '11/11/1991'
+        for i in 0..(password.len() - 6) {
+            for j in (i + 5)..(i + 9) {
+                if j >= password.len() {
+                    break;
+                }
+                let token = &password[i..j];
+                let captures = MAYBE_DATE_NO_SEPARATOR_REGEX.captures(token);
+                if captures.is_none() {
+                    continue;
+                }
+                let captures = captures.unwrap();
+                if captures[2] != captures[4] {
+                    // Original code uses regex backreferences, Rust doesn't support these.
+                    // Need to manually test that group 2 and 4 are the same
+                    continue;
+                }
+                let ymd = map_ints_to_ymd(captures[1].parse().unwrap(),
+                                          captures[3].parse().unwrap(),
+                                          captures[5].parse().unwrap());
+                if let Some(ymd) = ymd {
+                    matches.push(Match::default()
+                        .pattern("date")
+                        .token(token.to_string())
+                        .i(i)
+                        .j(j)
+                        .separator(captures[2].to_string())
+                        .year(ymd.0)
+                        .month(ymd.1)
+                        .day(ymd.2)
+                        .build());
+                }
+            }
+        }
+
+        matches.iter()
+            .filter(|&x| !matches.iter().any(|ref y| *x != **y && y.i <= x.i && y.j >= x.j))
+            .cloned()
+            .collect()
     }
+}
+
+/// Takes three ints and returns them in a (y, m, d) tuple
+fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)> {
+    // given a 3-tuple, discard if:
+    //   middle int is over 31 (for all ymd formats, years are never allowed in the middle)
+    //   middle int is zero
+    //   any int is over the max allowable year
+    //   any int is over two digits but under the min allowable year
+    //   2 ints are over 31, the max allowable day
+    //   2 ints are zero
+    //   all ints are over 12, the max allowable month
+    if second > 31 || second == 0 {
+        return None;
+    }
+    let mut over_12 = 0;
+    let mut over_31 = 0;
+    let mut zero = 0;
+    for &i in &[first, second, third] {
+        if 99 < i && i < DATE_MIN_YEAR || i > DATE_MAX_YEAR {
+            return None;
+        }
+        if i > 31 {
+            over_31 += 1;
+        }
+        if i > 12 {
+            over_12 += 1;
+        }
+        if i == 0 {
+            zero += 1;
+        }
+    }
+    if over_31 >= 2 || over_12 == 3 || zero >= 2 {
+        return None;
+    }
+
+    // first look for a four digit year: yyyy + daymonth or daymonth + yyyy
+    let possible_year_splits = &[(third, first, second), (first, second, third)];
+    for &(year, second, third) in possible_year_splits {
+        if DATE_MIN_YEAR <= year && year <= DATE_MAX_YEAR {
+            let dm = map_ints_to_md(second, third);
+            if let Some(dm) = dm {
+                return Some((year as i16, dm.0, dm.1));
+            } else {
+                // for a candidate that includes a four-digit year,
+                // when the remaining ints don't match to a day and month,
+                // it is not a date.
+                return None;
+            }
+        }
+    }
+
+    // given no four-digit year, two digit years are the most flexible int to match, so
+    // try to parse a day-month out of (first, second) or (second, first)
+    for &(year, second, third) in possible_year_splits {
+        let dm = map_ints_to_md(second, third);
+        if let Some(dm) = dm {
+            let year = two_to_four_digit_year(year);
+            return Some((year as i16, dm.0, dm.1));
+        }
+    }
+
+    None
+}
+
+/// Takes two ints and returns them in a (m, d) tuple
+fn map_ints_to_md(first: u16, second: u16) -> Option<(i8, i8)> {
+    for &(d, m) in &[(first, second), (second, first)] {
+        if 1 <= d && d <= 31 && 1 <= m && m <= 12 {
+            return Some((m as i8, d as i8));
+        }
+    }
+    None
+}
+
+fn two_to_four_digit_year(year: u16) -> u16 {
+    if year > 99 {
+        year
+    } else if year > 50 {
+        // 87 -> 1987
+        year + 1900
+    } else {
+        // 15 -> 2015
+        year + 2000
+    }
+}
+
+const DATE_MIN_YEAR: u16 = 1000;
+const DATE_MAX_YEAR: u16 = 2050;
+lazy_static! {
+    static ref DATE_SPLITS: HashMap<usize, Vec<(usize, usize)>> = {
+        let mut table = HashMap::with_capacity(5);
+        // for length-4 strings, eg 1191 or 9111, two ways to split:
+        // 1 1 91 (2nd split starts at index 1, 3rd at index 2)
+        // 91 1 1
+        table.insert(4, vec![(1, 2), (2, 3)]);
+        // 1 11 91
+        // 11 1 91
+        table.insert(5, vec![(1, 3), (2, 3)]);
+        // 1 1 1991
+        // 11 11 91
+        // 1991 1 1
+        table.insert(6, vec![(1, 2), (2, 4), (4, 5)]);
+        // 1 11 1991
+        // 11 1 1991
+        // 1991 1 11
+        // 1991 11 1
+        table.insert(7, vec![(1, 3), (2, 3), (4, 5), (4, 6)]);
+        // 11 11 1991
+        // 1991 11 11
+        table.insert(8, vec![(2, 4), (4, 6)]);
+        table
+    };
+    static ref MAYBE_DATE_NO_SEPARATOR_REGEX: Regex = Regex::new(r"^\d{4,8}$").unwrap();
+    static ref MAYBE_DATE_WITH_SEPARATOR_REGEX: Regex = Regex::new(r"^(\d{1,4})([\s/\\_.-])(\d{1,2})([\s/\\_.-])(\d{1,4})$").unwrap();
 }

@@ -19,3 +19,4 @@ version = ">=0.0.100"
 [features]
 default = []
 unstable = ["regex/simd-accel", "lazy_static/nightly"]
+dev = ["clippy", "unstable"]
