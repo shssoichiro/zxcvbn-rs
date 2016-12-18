@@ -462,7 +462,9 @@ impl Estimator for DateEstimator {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use ::scoring;
+    use ::matching::Match;
+    use ::scoring::Estimator;
     use quickcheck::TestResult;
 
     #[test]
@@ -476,14 +478,14 @@ mod tests {
                          (4, 2, 6),
                          (33, 7, 4272048)];
         for &(n, k, result) in &test_data {
-            assert_eq!(n_ck(n, k), result);
+            assert_eq!(scoring::n_ck(n, k), result);
         }
     }
 
     quickcheck! {
         fn test_n_ck_mul_overflow(n: usize, k: usize) -> TestResult {
             if n >= 63 {
-                n_ck(n, k); // Must not panic
+                scoring::n_ck(n, k); // Must not panic
                 TestResult::from_bool(true)
             } else {
                 TestResult::discard()
@@ -494,21 +496,21 @@ mod tests {
             if k > n || n >= 63 {
                 return TestResult::discard();
             }
-            TestResult::from_bool(n_ck(n, k) == n_ck(n, n-k))
+            TestResult::from_bool(scoring::n_ck(n, k) == scoring::n_ck(n, n-k))
         }
 
         fn test_n_ck_pascals_triangle(n: usize, k: usize) -> TestResult {
             if n == 0 || k == 0 || n >= 63 {
                 return TestResult::discard();
             }
-            TestResult::from_bool(n_ck(n, k) == n_ck(n-1, k-1) + n_ck(n-1, k))
+            TestResult::from_bool(scoring::n_ck(n, k) == scoring::n_ck(n-1, k-1) + scoring::n_ck(n-1, k))
         }
     }
 
     #[test]
     fn test_search_returns_one_bruteforce_match_given_empty_match_sequence() {
         let password = "0123456789";
-        let result = most_guessable_match_sequence(password, &[], true);
+        let result = scoring::most_guessable_match_sequence(password, &[], true);
         assert_eq!(result.sequence.len(), 1);
         let m0 = &result.sequence[0];
         assert_eq!(m0.pattern, "bruteforce");
@@ -522,7 +524,7 @@ mod tests {
         let password = "0123456789";
         let m = Match::default().i(0usize).j(5usize).guesses(Some(1)).build();
 
-        let result = most_guessable_match_sequence(password, &[m.clone()], true);
+        let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 2);
         assert_eq!(result.sequence[0], m);
         let m1 = &result.sequence[1];
@@ -536,7 +538,7 @@ mod tests {
         let password = "0123456789";
         let m = Match::default().i(3usize).j(9usize).guesses(Some(1)).build();
 
-        let result = most_guessable_match_sequence(password, &[m.clone()], true);
+        let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 2);
         let m0 = &result.sequence[0];
         assert_eq!(m0.pattern, "bruteforce");
@@ -550,7 +552,7 @@ mod tests {
         let password = "0123456789";
         let m = Match::default().i(1usize).j(8usize).guesses(Some(1)).build();
 
-        let result = most_guessable_match_sequence(password, &[m.clone()], true);
+        let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 3);
         assert_eq!(result.sequence[1], m);
         let m0 = &result.sequence[0];
@@ -569,12 +571,14 @@ mod tests {
         let mut m0 = Match::default().i(0usize).j(9usize).guesses(Some(1)).build();
         let m1 = Match::default().i(0usize).j(9usize).guesses(Some(2)).build();
 
-        let result = most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
+        let result =
+            scoring::most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
         assert_eq!(result.sequence.len(), 1);
         assert_eq!(result.sequence[0], m0);
         // make sure ordering doesn't matter
         m0.guesses = Some(3);
-        let result = most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
+        let result =
+            scoring::most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
         assert_eq!(result.sequence.len(), 1);
         assert_eq!(result.sequence[0], m1);
     }
@@ -586,8 +590,9 @@ mod tests {
         let m1 = Match::default().i(0usize).j(3usize).guesses(Some(2)).build();
         let m2 = Match::default().i(4usize).j(9usize).guesses(Some(1)).build();
 
-        let result =
-            most_guessable_match_sequence(password, &[m0.clone(), m1.clone(), m2.clone()], true);
+        let result = scoring::most_guessable_match_sequence(password,
+                                                            &[m0.clone(), m1.clone(), m2.clone()],
+                                                            true);
         assert_eq!(result.guesses, 3);
         assert_eq!(result.sequence, vec![m0]);
     }
@@ -599,8 +604,9 @@ mod tests {
         let m1 = Match::default().i(0usize).j(3usize).guesses(Some(2)).build();
         let m2 = Match::default().i(4usize).j(9usize).guesses(Some(1)).build();
 
-        let result =
-            most_guessable_match_sequence(password, &[m0.clone(), m1.clone(), m2.clone()], true);
+        let result = scoring::most_guessable_match_sequence(password,
+                                                            &[m0.clone(), m1.clone(), m2.clone()],
+                                                            true);
         assert_eq!(result.guesses, 4);
         assert_eq!(result.sequence, vec![m1, m2]);
     }
@@ -608,7 +614,7 @@ mod tests {
     #[test]
     fn test_calc_guesses_returns_guesses_when_cached() {
         let mut m = Match::default().guesses(Some(1)).build();
-        assert_eq!(estimate_guesses(&mut m, ""), 1);
+        assert_eq!(scoring::estimate_guesses(&mut m, ""), 1);
     }
 
     #[test]
@@ -620,8 +626,8 @@ mod tests {
             .month(Some(7))
             .day(Some(14))
             .build();
-        assert_eq!(estimate_guesses(&mut m, "1977"),
-                   (DateEstimator {}).estimate(&mut m));
+        assert_eq!(scoring::estimate_guesses(&mut m, "1977"),
+                   (scoring::DateEstimator {}).estimate(&mut m));
     }
 
     #[test]
@@ -632,11 +638,11 @@ mod tests {
                          ("abab", "ab", 2),
                          ("batterystaplebatterystaplebatterystaple", "batterystaple", 3)];
         for &(token, base_token, repeat_count) in &test_data {
-            let base_guesses = most_guessable_match_sequence(base_token,
-                                                             &::matching::omnimatch(base_token,
-                                                                                    &None),
-                                                             false)
-                .guesses;
+            let base_guesses =
+                scoring::most_guessable_match_sequence(base_token,
+                                                       &::matching::omnimatch(base_token, &None),
+                                                       false)
+                    .guesses;
             let mut m = Match::default()
                 .token(token)
                 .base_token(Some(base_token.to_string()))
@@ -644,7 +650,8 @@ mod tests {
                 .repeat_count(Some(repeat_count))
                 .build();
             let expected_guesses = base_guesses * repeat_count as u64;
-            assert_eq!((RepeatEstimator {}).estimate(&mut m), expected_guesses);
+            assert_eq!((scoring::RepeatEstimator {}).estimate(&mut m),
+                       expected_guesses);
         }
     }
 
@@ -657,7 +664,7 @@ mod tests {
                          ("ZYX", false, 4 * 3 * 2) /* obvious start * len-3 * descending */];
         for &(token, ascending, guesses) in &test_data {
             let mut m = Match::default().token(token).ascending(Some(ascending)).build();
-            assert_eq!((SequenceEstimator {}).estimate(&mut m), guesses);
+            assert_eq!((scoring::SequenceEstimator {}).estimate(&mut m), guesses);
         }
     }
 
@@ -668,7 +675,7 @@ mod tests {
             .regex_name(Some("alpha_lower"))
             .regex_match(Some(vec!["aizocdk".to_string()]))
             .build();
-        assert_eq!((RegexEstimator {}).estimate(&mut m), 26u64.pow(7));
+        assert_eq!((scoring::RegexEstimator {}).estimate(&mut m), 26u64.pow(7));
     }
 
     #[test]
@@ -678,7 +685,7 @@ mod tests {
             .regex_name(Some("alphanumeric"))
             .regex_match(Some(vec!["ag7C8".to_string()]))
             .build();
-        assert_eq!((RegexEstimator {}).estimate(&mut m), 62u64.pow(5));
+        assert_eq!((scoring::RegexEstimator {}).estimate(&mut m), 62u64.pow(5));
     }
 
     #[test]
@@ -688,8 +695,8 @@ mod tests {
             .regex_name(Some("recent_year"))
             .regex_match(Some(vec!["1972".to_string()]))
             .build();
-        assert_eq!((RegexEstimator {}).estimate(&mut m),
-                   (REFERENCE_YEAR - 1972).abs() as u64);
+        assert_eq!((scoring::RegexEstimator {}).estimate(&mut m),
+                   (scoring::REFERENCE_YEAR - 1972).abs() as u64);
     }
 
     #[test]
@@ -699,6 +706,7 @@ mod tests {
             .regex_name(Some("recent_year"))
             .regex_match(Some(vec!["2005".to_string()]))
             .build();
-        assert_eq!((RegexEstimator {}).estimate(&mut m), MIN_YEAR_SPACE as u64);
+        assert_eq!((scoring::RegexEstimator {}).estimate(&mut m),
+                   scoring::MIN_YEAR_SPACE as u64);
     }
 }
