@@ -16,7 +16,10 @@ time = "0.1.35"
 optional = true
 version = ">=0.0.100"
 
+[dev-dependencies]
+quickcheck = "0.4.1"
+
 [features]
 default = []
-unstable = ["regex/simd-accel", "lazy_static/nightly"]
 dev = ["clippy", "unstable"]
+unstable = ["regex/simd-accel", "lazy_static/nightly"]

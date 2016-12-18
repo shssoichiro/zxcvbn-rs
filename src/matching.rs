@@ -32,7 +32,7 @@ macro_attr! {
         pub year: Option<i16>,
         pub month: Option<i8>,
         pub day: Option<i8>,
-        pub guess_estimate: Option<u64>,
+        pub guesses: Option<u64>,
         pub uppercase_variations: Option<u64>,
         pub l33t_variations: Option<u64>,
 
@@ -114,15 +114,15 @@ impl Matcher for DictionaryMatch {
                      ranked_dict: &HashMap<&str, usize>) {
             let len = password.len();
             let password_lower = password.to_lowercase();
-            for i in 0..(len + 1) {
-                for j in 0..(len + 1) {
-                    let word = &password_lower[i..j];
+            for i in 0..len {
+                for j in 0..len {
+                    let word = &password_lower[i..(j + 1)];
                     if let Some(rank) = ranked_dict.get(word) {
                         matches.push(Match::default()
                             .pattern("dictionary")
                             .i(i)
                             .j(j)
-                            .token(password[i..j].to_string())
+                            .token(password[i..(j + 1)].to_string())
                             .matched_word(Some(word.to_string()))
                             .rank(Some(*rank))
                             .dictionary_name(Some(dictionary_name))
@@ -185,7 +185,7 @@ impl Matcher for L33tMatch {
             }
             let subbed_password = translate(password, &sub);
             for mut m4tch in (DictionaryMatch {}).get_matches(&subbed_password, user_inputs) {
-                let token = &password[m4tch.i..m4tch.j];
+                let token = &password[m4tch.i..(m4tch.j + 1)];
                 if Some(token.to_lowercase()) == m4tch.matched_word {
                     // Only return the matches that contain an actual substitution
                     continue;
@@ -346,7 +346,7 @@ fn spatial_match_helper(password: &str,
                         .pattern("spatial")
                         .i(i)
                         .j(j - 1)
-                        .token(password[i..(j + 1)].to_string())
+                        .token(password[i..j].to_string())
                         .graph(Some(graph_name.to_string()))
                         .turns(Some(turns))
                         .shifted_count(Some(shifted_count))
@@ -399,7 +399,8 @@ impl Matcher for RepeatMatch {
             // recursively match and score the base string
             let base_analysis =
                 super::scoring::most_guessable_match_sequence(&base_token,
-                                                              &omnimatch(&base_token, user_inputs));
+                                                              &omnimatch(&base_token, user_inputs),
+                                                              false);
             let base_matches = base_analysis.sequence;
             let base_guesses = base_analysis.guesses;
             matches.push(Match::default()
@@ -448,7 +449,7 @@ impl Matcher for SequenceMatch {
         fn update(i: usize, j: usize, delta: i32, password: &str, matches: &mut Vec<Match>) {
             let delta_abs = delta.abs();
             if (j - i > 1 || delta_abs == 1) && (0 < delta_abs && delta_abs <= MAX_DELTA) {
-                let token = &password[i..j];
+                let token = &password[i..(j + 1)];
                 let sequence_name;
                 let sequence_space;
                 if token.chars().any(char::is_lowercase) {
@@ -488,7 +489,7 @@ impl Matcher for SequenceMatch {
         let mut j;
         let mut last_delta = 0;
 
-        for k in 1..(password.len() + 1) {
+        for k in 1..password.len() {
             let delta = password[k..(k + 1)].chars().next().unwrap() as i32 -
                         password[(k - 1)..k].chars().next().unwrap() as i32;
             if last_delta == 0 {
@@ -566,19 +567,22 @@ impl Matcher for DateMatch {
         let mut matches = Vec::new();
 
         // dates without separators are between length 4 '1191' and 8 '11111991'
-        for i in 0..(password.len() - 4) {
-            for j in (i + 3)..(i + 7) {
+        if password.len() < 4 {
+            return matches;
+        }
+        for i in 0..(password.len() - 3) {
+            for j in (i + 3)..(i + 8) {
                 if j >= password.len() {
                     break;
                 }
-                let token = &password[i..j];
+                let token = &password[i..(j + 1)];
                 if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(token) {
                     continue;
                 }
                 let mut candidates = Vec::new();
                 for &(k, l) in &DATE_SPLITS[&token.len()] {
-                    let ymd = map_ints_to_ymd(token[0..(k + 1)].parse().unwrap(),
-                                              token[k..(l + 1)].parse().unwrap(),
+                    let ymd = map_ints_to_ymd(token[0..k].parse().unwrap(),
+                                              token[k..l].parse().unwrap(),
                                               token[l..].parse().unwrap());
                     if ymd.is_some() {
                         candidates.push(ymd.unwrap());
@@ -610,36 +614,38 @@ impl Matcher for DateMatch {
         }
 
         // dates with separators are between length 6 '1/1/91' and 10 '11/11/1991'
-        for i in 0..(password.len() - 6) {
-            for j in (i + 5)..(i + 9) {
-                if j >= password.len() {
-                    break;
-                }
-                let token = &password[i..j];
-                let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(token);
-                if captures.is_none() {
-                    continue;
-                }
-                let captures = captures.unwrap();
-                if captures[2] != captures[4] {
-                    // Original code uses regex backreferences, Rust doesn't support these.
-                    // Need to manually test that group 2 and 4 are the same
-                    continue;
-                }
-                let ymd = map_ints_to_ymd(captures[1].parse().unwrap(),
-                                          captures[3].parse().unwrap(),
-                                          captures[5].parse().unwrap());
-                if let Some(ymd) = ymd {
-                    matches.push(Match::default()
-                        .pattern("date")
-                        .token(token.to_string())
-                        .i(i)
-                        .j(j)
-                        .separator(captures[2].to_string())
-                        .year(ymd.0)
-                        .month(ymd.1)
-                        .day(ymd.2)
-                        .build());
+        if password.len() >= 6 {
+            for i in 0..(password.len() - 5) {
+                for j in (i + 5)..(i + 10) {
+                    if j >= password.len() {
+                        break;
+                    }
+                    let token = &password[i..(j + 1)];
+                    let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(token);
+                    if captures.is_none() {
+                        continue;
+                    }
+                    let captures = captures.unwrap();
+                    if captures[2] != captures[4] {
+                        // Original code uses regex backreferences, Rust doesn't support these.
+                        // Need to manually test that group 2 and 4 are the same
+                        continue;
+                    }
+                    let ymd = map_ints_to_ymd(captures[1].parse().unwrap(),
+                                              captures[3].parse().unwrap(),
+                                              captures[5].parse().unwrap());
+                    if let Some(ymd) = ymd {
+                        matches.push(Match::default()
+                            .pattern("date")
+                            .token(token.to_string())
+                            .i(i)
+                            .j(j)
+                            .separator(captures[2].to_string())
+                            .year(ymd.0)
+                            .month(ymd.1)
+                            .day(ymd.2)
+                            .build());
+                    }
                 }
             }
         }
