@@ -20,17 +20,22 @@ macro_attr! {
         pub turns: Option<usize>,
         pub shifted_count: Option<usize>,
         pub base_token: Option<String>,
-        pub base_matches: Option<Vec<String>>,
+        pub base_matches: Option<Vec<Match>>,
         pub base_guesses: Option<u64>,
         pub repeat_count: Option<usize>,
         pub sequence_name: Option<&'static str>,
         pub sequence_space: Option<u8>,
         pub ascending: Option<bool>,
         pub regex_name: Option<&'static str>,
+        pub regex_match: Option<Vec<String>>,
         pub separator: Option<String>,
         pub year: Option<i16>,
         pub month: Option<i8>,
         pub day: Option<i8>,
+        pub guess_estimate: Option<u64>,
+        pub uppercase_variations: Option<u64>,
+        pub l33t_variations: Option<u64>,
+
     }
 }
 
@@ -405,7 +410,7 @@ impl Matcher for RepeatMatch {
                 .repeat_count(m4tch[0].len() / base_token.len())
                 .base_token(base_token)
                 .base_guesses(base_guesses)
-                .base_matches(base_matches)
+                .base_matches(Some(base_matches))
                 .build());
             last_index = j + 1;
         }
@@ -517,6 +522,7 @@ impl Matcher for RegexMatch {
                     .i(capture.pos(0).unwrap().0)
                     .j(capture.pos(0).unwrap().1)
                     .regex_name(Some(name))
+                    .regex_match(Some(capture.iter().map(|x| x.unwrap().to_string()).collect()))
                     .build());
             }
         }

@@ -28,6 +28,7 @@ extern crate regex;
 extern crate time;
 
 use std::ascii::AsciiExt;
+use matching::Match;
 
 mod adjacency_graphs;
 pub mod feedback;
@@ -54,7 +55,7 @@ pub struct Entropy {
     /// Verbal feedback to help choose better passwords. Set when `score` <= 2.
     pub feedback: Option<feedback::Feedback>,
     /// The list of patterns the guess calculation was based on
-    pub sequence: Vec<String>,
+    pub sequence: Vec<Match>,
     /// How long it took to calculate the answer, in milliseconds
     pub calc_time: u64,
 }
@@ -94,7 +95,7 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
     let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
     let (attack_times, attack_times_display, score) =
         time_estimates::estimate_attack_times(result.guesses);
-    let feedback = feedback::get_feedback(result.score, &matches);
+    let feedback = feedback::get_feedback(score, &matches);
 
     Some(Entropy {
         guesses: result.guesses,
