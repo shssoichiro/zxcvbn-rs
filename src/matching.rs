@@ -115,7 +115,7 @@ impl Matcher for DictionaryMatch {
             let len = password.len();
             let password_lower = password.to_lowercase();
             for i in 0..len {
-                for j in 0..len {
+                for j in i..len {
                     let word = &password_lower[i..(j + 1)];
                     if let Some(rank) = ranked_dict.get(word) {
                         matches.push(Match::default()
