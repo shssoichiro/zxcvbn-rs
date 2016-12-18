@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::cmp;
-use super::matching::Match;
+use ::matching::Match;
 
 #[derive(Debug, Clone)]
 #[doc(hidden)]
@@ -37,7 +37,7 @@ const MIN_SUBMATCH_GUESSES_MULTI_CHAR: u64 = 50;
 
 #[doc(hidden)]
 pub fn most_guessable_match_sequence(password: &str,
-                                     matches: &[super::matching::Match],
+                                     matches: &[::matching::Match],
                                      exclude_additive: bool)
                                      -> GuessCalculation {
     let n = password.len();
@@ -367,11 +367,11 @@ impl Estimator for SpatialEstimator {
 }
 
 lazy_static! {
-    static ref KEYBOARD_AVERAGE_DEGREE: usize = calc_average_degree(&super::adjacency_graphs::QWERTY);
+    static ref KEYBOARD_AVERAGE_DEGREE: usize = calc_average_degree(&::adjacency_graphs::QWERTY);
     // slightly different for keypad/mac keypad, but close enough
-    static ref KEYPAD_AVERAGE_DEGREE: usize = calc_average_degree(&super::adjacency_graphs::KEYPAD);
-    static ref KEYBOARD_STARTING_POSITIONS: usize = super::adjacency_graphs::QWERTY.len();
-    static ref KEYPAD_STARTING_POSITIONS: usize = super::adjacency_graphs::KEYPAD.len();
+    static ref KEYPAD_AVERAGE_DEGREE: usize = calc_average_degree(&::adjacency_graphs::KEYPAD);
+    static ref KEYBOARD_STARTING_POSITIONS: usize = ::adjacency_graphs::QWERTY.len();
+    static ref KEYPAD_STARTING_POSITIONS: usize = ::adjacency_graphs::KEYPAD.len();
 }
 
 fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> usize {
@@ -603,5 +603,102 @@ mod tests {
             most_guessable_match_sequence(password, &[m0.clone(), m1.clone(), m2.clone()], true);
         assert_eq!(result.guesses, 4);
         assert_eq!(result.sequence, vec![m1, m2]);
+    }
+
+    #[test]
+    fn test_calc_guesses_returns_guesses_when_cached() {
+        let mut m = Match::default().guesses(Some(1)).build();
+        assert_eq!(estimate_guesses(&mut m, ""), 1);
+    }
+
+    #[test]
+    fn test_calc_guesses_delegates_based_on_pattern() {
+        let mut m = Match::default()
+            .pattern("date")
+            .token("1977")
+            .year(Some(1977))
+            .month(Some(7))
+            .day(Some(14))
+            .build();
+        assert_eq!(estimate_guesses(&mut m, "1977"),
+                   (DateEstimator {}).estimate(&mut m));
+    }
+
+    #[test]
+    fn test_repeat_guesses() {
+        let test_data = [("aa", "a", 2),
+                         ("999", "9", 3),
+                         ("$$$$", "$", 4),
+                         ("abab", "ab", 2),
+                         ("batterystaplebatterystaplebatterystaple", "batterystaple", 3)];
+        for &(token, base_token, repeat_count) in &test_data {
+            let base_guesses = most_guessable_match_sequence(base_token,
+                                                             &::matching::omnimatch(base_token,
+                                                                                    &None),
+                                                             false)
+                .guesses;
+            let mut m = Match::default()
+                .token(token)
+                .base_token(Some(base_token.to_string()))
+                .base_guesses(Some(base_guesses))
+                .repeat_count(Some(repeat_count))
+                .build();
+            let expected_guesses = base_guesses * repeat_count as u64;
+            assert_eq!((RepeatEstimator {}).estimate(&mut m), expected_guesses);
+        }
+    }
+
+    #[test]
+    fn test_sequence_guesses() {
+        let test_data = [("ab", true, 4 * 2), // obvious start * len-2
+                         ("XYZ", true, 26 * 3), // base26 * len-3
+                         ("4567", true, 10 * 4), // base10 * len-4
+                         ("7654", false, 10 * 4 * 2), // base10 * len 4 * descending
+                         ("ZYX", false, 4 * 3 * 2) /* obvious start * len-3 * descending */];
+        for &(token, ascending, guesses) in &test_data {
+            let mut m = Match::default().token(token).ascending(Some(ascending)).build();
+            assert_eq!((SequenceEstimator {}).estimate(&mut m), guesses);
+        }
+    }
+
+    #[test]
+    fn test_regex_guesses_lowercase() {
+        let mut m = Match::default()
+            .token("aizocdk")
+            .regex_name(Some("alpha_lower"))
+            .regex_match(Some(vec!["aizocdk".to_string()]))
+            .build();
+        assert_eq!((RegexEstimator {}).estimate(&mut m), 26u64.pow(7));
+    }
+
+    #[test]
+    fn test_regex_guesses_alphanumeric() {
+        let mut m = Match::default()
+            .token("ag7C8")
+            .regex_name(Some("alphanumeric"))
+            .regex_match(Some(vec!["ag7C8".to_string()]))
+            .build();
+        assert_eq!((RegexEstimator {}).estimate(&mut m), 62u64.pow(5));
+    }
+
+    #[test]
+    fn test_regex_guesses_distant_year() {
+        let mut m = Match::default()
+            .token("1972")
+            .regex_name(Some("recent_year"))
+            .regex_match(Some(vec!["1972".to_string()]))
+            .build();
+        assert_eq!((RegexEstimator {}).estimate(&mut m),
+                   (REFERENCE_YEAR - 1972).abs() as u64);
+    }
+
+    #[test]
+    fn test_regex_guesses_recent_year() {
+        let mut m = Match::default()
+            .token("2005")
+            .regex_name(Some("recent_year"))
+            .regex_match(Some(vec!["2005".to_string()]))
+            .build();
+        assert_eq!((RegexEstimator {}).estimate(&mut m), MIN_YEAR_SPACE as u64);
     }
 }
