@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::cmp;
-use ::matching::Match;
+use matching::Match;
 
 #[derive(Debug, Clone)]
 #[doc(hidden)]
@@ -61,38 +61,47 @@ pub fn most_guessable_match_sequence(password: &str,
     /// helper: considers whether a length-l sequence ending at match m is better (fewer guesses)
     /// than previously encountered sequences, updating state if so.
     fn update(mut m: Match,
-              l: usize,
+              len: usize,
               password: &str,
               optimal: &mut Optimal,
               exclude_additive: bool) {
         let k = m.j;
         let mut pi = estimate_guesses(&mut m, password);
-        if l > 1 {
+        if len > 1 {
             // we're considering a length-l sequence ending with match m:
             // obtain the product term in the minimization function by multiplying m's guesses
             // by the product of the length-(l-1) sequence ending just before m, at m.i - 1.
-            pi *= optimal.pi[m.i - 1][&(l - 1)];
+            pi = match pi.checked_mul(optimal.pi[m.i - 1][&(len - 1)]) {
+                Some(r) => r,
+                None => ::std::u64::MAX,
+            };
         }
         // calculate the minimization func
-        let mut g = factorial(l) as u64 * pi;
+        let mut guesses = match (factorial(len) as u64).checked_mul(pi) {
+            Some(r) => r,
+            None => ::std::u64::MAX,
+        };
         if !exclude_additive {
-            g += MIN_GUESSES_BEFORE_GROWING_SEQUENCE.pow((l - 1) as u32);
+            guesses = match guesses.checked_add(MIN_GUESSES_BEFORE_GROWING_SEQUENCE.pow((len - 1) as u32)) {
+                Some(r) => r,
+                None => ::std::u64::MAX
+            };
         }
         // update state if new best.
         // first see if any competing sequences covering this prefix, with l or fewer matches,
         // fare better than this sequence. if so, skip it and return.
-        for (&competing_l, &competing_g) in &optimal.g[k] {
-            if competing_l > l {
+        for (&competing_l, &competing_guesses) in &optimal.g[k] {
+            if competing_l > len {
                 continue;
             }
-            if competing_g <= g as u64 {
+            if competing_guesses <= guesses as u64 {
                 return;
             }
         }
         // this sequence might be part of the final optimal sequence.
-        *optimal.g[k].entry(l).or_insert(0) = g as u64;
-        *optimal.m[k].entry(l).or_insert_with(Match::default) = m;
-        *optimal.pi[k].entry(l).or_insert(0) = pi;
+        *optimal.g[k].entry(len).or_insert(0) = guesses as u64;
+        *optimal.m[k].entry(len).or_insert_with(Match::default) = m;
+        *optimal.pi[k].entry(len).or_insert(0) = pi;
     }
 
     /// helper: evaluate bruteforce matches ending at k.
@@ -234,7 +243,17 @@ struct BruteForceEstimator {}
 
 impl Estimator for BruteForceEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
-        let guesses = BRUTEFORCE_CARDINALITY.pow(m.token.len() as u32);
+        let mut guesses = BRUTEFORCE_CARDINALITY;
+        if m.token.len() >= 2 {
+            for _ in 2..m.token.len() {
+                guesses = match guesses.checked_mul(BRUTEFORCE_CARDINALITY) {
+                    Some(r) => r,
+                    None => {
+                        return ::std::u64::MAX;
+                    }
+                }
+            }
+        }
         // small detail: make bruteforce matches at minimum one guess bigger than smallest allowed
         // submatch guesses, such that non-bruteforce submatches over the same [i..j] take precedence.
         let min_guesses = if m.token.len() == 1 {
@@ -468,9 +487,9 @@ impl Estimator for DateEstimator {
 
 #[cfg(test)]
 mod tests {
-    use ::scoring;
-    use ::matching::Match;
-    use ::scoring::Estimator;
+    use scoring;
+    use matching::Match;
+    use scoring::Estimator;
     use quickcheck::TestResult;
     use std::collections::HashMap;
 

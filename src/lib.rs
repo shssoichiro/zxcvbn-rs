@@ -22,6 +22,7 @@ extern crate itertools;
 extern crate lazy_static;
 #[macro_use]
 extern crate macro_attr;
+extern crate onig;
 #[macro_use]
 extern crate quick_error;
 extern crate regex;
@@ -128,5 +129,16 @@ mod tests {
             }
             TestResult::from_bool(true)
         }
+    }
+
+    #[test]
+    fn test_zxcvbn() {
+        let password = "r0sebudmaelstrom11/20/91aaaa";
+        let entropy = zxcvbn(password, None).unwrap();
+        assert_eq!(entropy.guesses, 103000000);
+        assert_eq!(entropy.guesses_log10, 8);
+        assert_eq!(entropy.score, 3);
+        assert!(!entropy.sequence.is_empty());
+        assert!(entropy.feedback.is_none());
     }
 }

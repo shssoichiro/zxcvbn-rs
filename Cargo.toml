@@ -16,6 +16,10 @@ time = "0.1.35"
 optional = true
 version = ">=0.0.100"
 
+[dependencies.onig]
+features = ["static-libonig"]
+version = "1.2.0"
+
 [dev-dependencies]
 quickcheck = "0.4.1"
 
