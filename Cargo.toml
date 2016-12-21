@@ -1,6 +1,11 @@
 [package]
 authors = ["Josh Holmer <jholmer.in@gmail.com>"]
+description = "An entropy-based password strength estimator, originally for Javascript by Dropbox."
+documentation = "https://docs.rs/zxcvbn"
+homepage = "https://github.com/shssoichiro/zxcvbn-rs"
+license = "MIT"
 name = "zxcvbn"
+repository = "https://github.com/shssoichiro/zxcvbn-rs"
 version = "0.1.0"
 
 [dependencies]
