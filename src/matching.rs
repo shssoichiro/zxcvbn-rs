@@ -5,6 +5,7 @@ use std::collections::HashMap;
 
 macro_attr! {
     #[derive(Debug, Clone, Default, PartialEq, Builder!)]
+    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
     pub struct Match {
         pub pattern: &'static str,
         pub i: usize,
@@ -36,13 +37,59 @@ macro_attr! {
         pub guesses: Option<u64>,
         pub uppercase_variations: Option<u64>,
         pub l33t_variations: Option<u64>,
-
     }
 }
 
 impl Match {
     pub fn build(&mut self) -> Match {
         self.clone()
+    }
+}
+
+#[cfg(feature = "serde")]
+mod ser {
+    use super::Match;
+    use serde::ser;
+
+    impl ser::Serialize for Match {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            let mut state = serializer.serialize_struct("Match", 30)?;
+            serializer.serialize_struct_elt(&mut state, "pattern", self.pattern)?;
+            serializer.serialize_struct_elt(&mut state, "i", self.i)?;
+            serializer.serialize_struct_elt(&mut state, "j", self.j)?;
+            serializer.serialize_struct_elt(&mut state, "token", &self.token)?;
+            serializer.serialize_struct_elt(&mut state, "matched_word", &self.matched_word)?;
+            serializer.serialize_struct_elt(&mut state, "rank", self.rank)?;
+            serializer.serialize_struct_elt(&mut state, "dictionary_name", self.dictionary_name)?;
+            serializer.serialize_struct_elt(&mut state, "graph", &self.graph)?;
+            serializer.serialize_struct_elt(&mut state, "reversed", self.reversed)?;
+            serializer.serialize_struct_elt(&mut state, "l33t", self.l33t)?;
+            serializer.serialize_struct_elt(&mut state, "sub", &self.sub)?;
+            serializer.serialize_struct_elt(&mut state, "sub_display", &self.sub_display)?;
+            serializer.serialize_struct_elt(&mut state, "turns", self.turns)?;
+            serializer.serialize_struct_elt(&mut state, "shifted_count", self.shifted_count)?;
+            serializer.serialize_struct_elt(&mut state, "base_token", &self.base_token)?;
+            serializer.serialize_struct_elt(&mut state, "base_matches", &self.base_matches)?;
+            serializer.serialize_struct_elt(&mut state, "base_guesses", self.base_guesses)?;
+            serializer.serialize_struct_elt(&mut state, "repeat_count", self.repeat_count)?;
+            serializer.serialize_struct_elt(&mut state, "sequence_name", self.sequence_name)?;
+            serializer.serialize_struct_elt(&mut state, "sequence_space", self.sequence_space)?;
+            serializer.serialize_struct_elt(&mut state, "ascending", self.ascending)?;
+            serializer.serialize_struct_elt(&mut state, "regex_name", self.regex_name)?;
+            serializer.serialize_struct_elt(&mut state, "regex_match", &self.regex_match)?;
+            serializer.serialize_struct_elt(&mut state, "separator", &self.separator)?;
+            serializer.serialize_struct_elt(&mut state, "year", self.year)?;
+            serializer.serialize_struct_elt(&mut state, "month", self.month)?;
+            serializer.serialize_struct_elt(&mut state, "day", self.day)?;
+            serializer.serialize_struct_elt(&mut state, "guesses", self.guesses)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "uppercase_variations",
+                                      self.uppercase_variations)?;
+            serializer.serialize_struct_elt(&mut state, "l33t_variations", self.l33t_variations)?;
+            serializer.serialize_struct_end(state)
+        }
     }
 }
 
