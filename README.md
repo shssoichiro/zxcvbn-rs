@@ -22,7 +22,7 @@ Consider using zxcvbn as an algorithmic alternative to password composition poli
 
 ```toml
 [dependencies]
-zxcvbn = "0.1.0"
+zxcvbn = "0.2.0"
 ```
 
 If your project will only be built against the nightly Rust compiler, you can add the `unstable` feature flag to enable
@@ -30,7 +30,7 @@ some nightly-exclusive features such as SIMD which may improve performance.
 
 ```toml
 [dependencies]
-zxcvbn = { version = "0.1.0", features = ["unstable"] }
+zxcvbn = { version = "0.2.0", features = ["unstable"] }
 ```
 
 Likewise, zxcvbn has feature flags for "rustc-serialize" and "serde" if you require serialization support.
