@@ -39,7 +39,7 @@ zxcvbn follows Semantic Versioning.
 
 ## Usage
 
-Full API documentation can be found [here](https://docs.rs/crate/zxcvbn).
+Full API documentation can be found [here](https://docs.rs/zxcvbn/*/zxcvbn/).
 
 `zxcvbn` exposes one function called `zxcvbn` which can be called to calculate a score (0-4) for a password as well as other relevant information.
 `zxcvbn` may also take an array of user inputs (e.g. username, email address, city, state) to provide warnings for passwords containing such information.
@@ -57,7 +57,7 @@ fn main() {
 }
 ```
 
-Other fields available on the returned `Entropy` struct may be viewed in the [full documentation](https://docs.rs/crate/zxcvbn).
+Other fields available on the returned `Entropy` struct may be viewed in the [full documentation](https://docs.rs/zxcvbn/*/zxcvbn/).
 
 ## Contributing
 
