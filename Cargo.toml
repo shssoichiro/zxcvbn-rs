@@ -6,7 +6,7 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "0.1.0"
+version = "0.2.0"
 
 [dependencies]
 derive_builder = "0.2.1"
