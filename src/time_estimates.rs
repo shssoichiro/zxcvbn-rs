@@ -3,6 +3,7 @@
 
 /// Back-of-the-envelope crack time estimations, in seconds, based on a few scenarios
 #[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
 pub struct CrackTimes {
     /// Online attack on a service that rate-limits password attempts
     pub online_throttling_100_per_hour: u64,
@@ -23,6 +24,7 @@ pub struct CrackTimes {
 /// Back-of-the-envelope crack time estimations, in a human-readable format,
 /// based on a few scenarios
 #[derive(Debug, Clone)]
+#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
 pub struct CrackTimesDisplay {
     /// Online attack on a service that rate-limits password attempts
     pub online_throttling_100_per_hour: String,
@@ -38,6 +40,54 @@ pub struct CrackTimesDisplay {
     /// anywhere from one billion to one trillion guesses per second,
     /// depending on number of cores and machines, ballparking at 10 billion per second.
     pub offline_fast_hashing_1e10_per_second: String,
+}
+
+#[cfg(feature = "serde")]
+mod ser {
+    use super::{CrackTimes, CrackTimesDisplay};
+    use serde::ser;
+
+    impl ser::Serialize for CrackTimes {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            let mut state = serializer.serialize_struct("CrackTimes", 4)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "online_throttling_100_per_hour",
+                                      self.online_throttling_100_per_hour)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "online_no_throttling_10_per_second",
+                                      self.online_no_throttling_10_per_second)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "offline_slow_hashing_1e4_per_second",
+                                      self.offline_slow_hashing_1e4_per_second)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "offline_fast_hashing_1e10_per_second",
+                                      self.offline_fast_hashing_1e10_per_second)?;
+            serializer.serialize_struct_end(state)
+        }
+    }
+
+    impl ser::Serialize for CrackTimesDisplay {
+        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
+            where S: ser::Serializer
+        {
+            let mut state = serializer.serialize_struct("CrackTimesDisplay", 4)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "online_throttling_100_per_hour",
+                                      &self.online_throttling_100_per_hour)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "online_no_throttling_10_per_second",
+                                      &self.online_no_throttling_10_per_second)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "offline_slow_hashing_1e4_per_second",
+                                      &self.offline_slow_hashing_1e4_per_second)?;
+            serializer.serialize_struct_elt(&mut state,
+                                      "offline_fast_hashing_1e10_per_second",
+                                      &self.offline_fast_hashing_1e10_per_second)?;
+            serializer.serialize_struct_end(state)
+        }
+    }
 }
 
 #[doc(hidden)]

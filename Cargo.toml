@@ -24,10 +24,19 @@ version = ">=0.0.100"
 features = ["static-libonig"]
 version = "1.2.0"
 
+[dependencies.rustc-serialize]
+optional = true
+version = "0.3"
+
+[dependencies.serde]
+optional = true
+version = "<0.9"
+
 [dev-dependencies]
 quickcheck = "0.4.1"
+serde_json = "0.8.4"
 
 [features]
 default = []
-dev = ["clippy", "unstable"]
+dev = ["clippy", "unstable", "rustc-serialize", "serde"]
 unstable = ["regex/simd-accel", "lazy_static/nightly"]

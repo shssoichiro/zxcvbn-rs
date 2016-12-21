@@ -33,6 +33,8 @@ some nightly-exclusive features such as SIMD which may improve performance.
 zxcvbn = { version = "0.1.0", features = ["unstable"] }
 ```
 
+Likewise, zxcvbn has feature flags for "rustc-serialize" and "serde" if you require serialization support.
+
 zxcvbn follows Semantic Versioning.
 
 ## Usage
