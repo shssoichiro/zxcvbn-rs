@@ -23,8 +23,6 @@ extern crate lazy_static;
 #[macro_use]
 extern crate macro_attr;
 extern crate onig;
-#[macro_use]
-extern crate quick_error;
 extern crate regex;
 extern crate time;
 
