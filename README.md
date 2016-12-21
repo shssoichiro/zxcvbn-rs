@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/shssoichiro/zxcvbn-rs.svg?branch=master)](https://travis-ci.org/shssoichiro/zxcvbn-rs)
 [![Version](https://img.shields.io/crates/v/zxcvbn.svg)](https://crates.io/crates/zxcvbn)
-[![License](https://img.shields.io/crates/l/zxcvbn-rs.svg)](https://github.com/shssoichiro/zxcvbn-rs/blob/master/LICENSE)
+[![License](https://img.shields.io/crates/l/zxcvbn.svg)](https://github.com/shssoichiro/zxcvbn-rs/blob/master/LICENSE)
 
 ## Overview
 
