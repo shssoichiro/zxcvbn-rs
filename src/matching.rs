@@ -580,10 +580,10 @@ impl Matcher for RegexMatch {
                 matches.push(Match::default()
                     .pattern("regex")
                     .token(token.to_string())
-                    .i(capture.pos(0).unwrap().0)
-                    .j(capture.pos(0).unwrap().1 - 1)
+                    .i(capture.get(0).unwrap().start())
+                    .j(capture.get(0).unwrap().end() - 1)
                     .regex_name(Some(name))
-                    .regex_match(Some(capture.iter().map(|x| x.unwrap().to_string()).collect()))
+                    .regex_match(Some(capture.iter().map(|x| x.unwrap().as_str().to_string()).collect()))
                     .build());
             }
         }
