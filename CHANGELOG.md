@@ -1,4 +1,4 @@
-**Version 0.3.0 (unreleased)**
+**Version 0.3.0**
  - Make reference year dynamic
  - Performance optimizations
  - [SEMVER_MAJOR] Rename "serde" feature to "ser" (required by cargo)
