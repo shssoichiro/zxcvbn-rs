@@ -27,7 +27,10 @@ extern crate regex;
 extern crate time;
 #[cfg(feature = "rustc-serialize")]
 extern crate rustc_serialize;
-#[cfg(feature = "serde")]
+#[cfg(feature = "ser")]
+#[macro_use]
+extern crate serde_derive;
+#[cfg(feature = "ser")]
 extern crate serde;
 
 #[cfg(test)]
@@ -47,6 +50,7 @@ pub mod time_estimates;
 /// Contains the results of an entropy calculation
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
+#[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Entropy {
     /// Estimated guesses needed to crack the password
     pub guesses: u64,
@@ -115,52 +119,6 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
         sequence: result.sequence,
         calc_time: calc_time,
     })
-}
-
-#[cfg(feature = "serde")]
-mod ser {
-    use super::Entropy;
-    use serde::ser;
-
-    impl ser::Serialize for Entropy {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-            where S: ser::Serializer
-        {
-            let mut state = serializer.serialize_struct("Entropy", 8)?;
-            serializer.serialize_struct_elt(&mut state, "guesses", self.guesses)?;
-            serializer.serialize_struct_elt(&mut state, "guesses_log10", self.guesses_log10)?;
-            serializer.serialize_struct_elt(&mut state, "crack_times_seconds", self.crack_times_seconds)?;
-            serializer.serialize_struct_elt(&mut state, "crack_times_display", &self.crack_times_display)?;
-            serializer.serialize_struct_elt(&mut state, "score", self.score)?;
-            serializer.serialize_struct_elt(&mut state, "feedback", &self.feedback)?;
-            serializer.serialize_struct_elt(&mut state, "sequence", &self.sequence)?;
-            serializer.serialize_struct_elt(&mut state, "calc_time", self.calc_time)?;
-            serializer.serialize_struct_end(state)
-        }
-    }
-
-    #[cfg(test)]
-    extern crate serde_json;
-
-    #[test]
-    fn test_serde_serialize() {
-        use self::serde_json::{from_str, to_string, Value};
-        use super::zxcvbn;
-        use std::collections::BTreeMap;
-
-        let password = "password";
-        let entropy = zxcvbn(password, None).unwrap();
-        let deser: BTreeMap<String, Value> = from_str(&to_string(&entropy).unwrap()).unwrap();
-        assert_eq!(deser.get("guesses"), Some(&Value::U64(entropy.guesses)));
-        assert_eq!(deser.get("guesses_log10"),
-                   Some(&Value::U64(entropy.guesses_log10 as u64)));
-        assert!(deser.get("crack_times_seconds").is_some());
-        assert!(deser.get("crack_times_display").is_some());
-        assert_eq!(deser.get("score"), Some(&Value::U64(entropy.score as u64)));
-        assert!(deser.get("feedback").is_some());
-        assert!(deser.get("sequence").is_some());
-        assert_eq!(deser.get("calc_time"), Some(&Value::U64(entropy.calc_time)));
-    }
 }
 
 #[cfg(test)]

@@ -6,29 +6,13 @@ use super::matching::Match;
 /// Verbal feedback to help choose better passwords
 #[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
+#[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Feedback {
     /// Explains what's wrong, e.g. "This is a top-10 common password". Not always set.
     pub warning: Option<&'static str>,
     /// A possibly-empty list of suggestions to help choose a less guessable password.
     /// E.g. "Add another word or two".
     pub suggestions: Vec<&'static str>,
-}
-
-#[cfg(feature = "serde")]
-mod ser {
-    use super::Feedback;
-    use serde::ser;
-
-    impl ser::Serialize for Feedback {
-        fn serialize<S>(&self, serializer: &mut S) -> Result<(), S::Error>
-            where S: ser::Serializer
-        {
-            let mut state = serializer.serialize_struct("Feedback", 2)?;
-            serializer.serialize_struct_elt(&mut state, "warning", self.warning)?;
-            serializer.serialize_struct_elt(&mut state, "suggestions", &self.suggestions)?;
-            serializer.serialize_struct_end(state)
-        }
-    }
 }
 
 #[doc(hidden)]

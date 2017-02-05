@@ -28,15 +28,20 @@ version = "1.2.0"
 optional = true
 version = "0.3"
 
+[dependencies.serde_derive]
+optional = true
+version = "0.9.0"
+
 [dependencies.serde]
 optional = true
-version = "<0.9"
+version = "0.9.0"
 
 [dev-dependencies]
 quickcheck = "0.4.1"
-serde_json = "0.8.4"
+serde_json = "0.9.0"
 
 [features]
 default = []
-dev = ["clippy", "unstable", "rustc-serialize", "serde"]
+dev = ["clippy", "unstable", "rustc-serialize"]
+ser = ["serde", "serde_derive"]
 unstable = ["regex/simd-accel", "lazy_static/nightly"]
