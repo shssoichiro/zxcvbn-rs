@@ -119,12 +119,12 @@ lazy_static! {
         table.insert('z', vec!['2']);
         table
     };
-    static ref GRAPHS: HashMap<&'static str, HashMap<char, Vec<Option<&'static str>>>> = {
+    static ref GRAPHS: HashMap<&'static str, &'static HashMap<char, Vec<Option<&'static str>>>> = {
         let mut table = HashMap::with_capacity(4);
-        table.insert("qwerty", super::adjacency_graphs::QWERTY.clone());
-        table.insert("dvorak", super::adjacency_graphs::DVORAK.clone());
-        table.insert("keypad", super::adjacency_graphs::KEYPAD.clone());
-        table.insert("mac_keypad", super::adjacency_graphs::MAC_KEYPAD.clone());
+        table.insert("qwerty", &*super::adjacency_graphs::QWERTY);
+        table.insert("dvorak", &*super::adjacency_graphs::DVORAK);
+        table.insert("keypad", &*super::adjacency_graphs::KEYPAD);
+        table.insert("mac_keypad", &*super::adjacency_graphs::MAC_KEYPAD);
         table
     };
 }

@@ -358,9 +358,9 @@ impl Estimator for SpatialEstimator {
         #[allow(clone_on_copy)]
         let (starts, degree) = if ["qwerty", "dvorak"]
             .contains(&m.graph.as_ref().unwrap().as_str()) {
-            (KEYBOARD_STARTING_POSITIONS.clone(), KEYBOARD_AVERAGE_DEGREE.clone())
+            (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
         } else {
-            (KEYPAD_STARTING_POSITIONS.clone(), KEYPAD_AVERAGE_DEGREE.clone())
+            (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
         };
         let mut guesses = 0;
         let len = m.token.len();
@@ -775,8 +775,8 @@ mod tests {
             .turns(Some(1))
             .shifted_count(Some(0))
             .build();
-        let base_guesses = scoring::KEYBOARD_STARTING_POSITIONS.clone() *
-                           scoring::KEYBOARD_AVERAGE_DEGREE.clone() *
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS *
+                           *scoring::KEYBOARD_AVERAGE_DEGREE *
                            (m.token.len() - 1);
         assert_eq!((scoring::SpatialEstimator {}).estimate(&mut m),
                    base_guesses as u64);
@@ -791,10 +791,9 @@ mod tests {
             .turns(Some(1))
             .shifted_count(Some(2))
             .build();
-        let base_guesses = (scoring::KEYBOARD_STARTING_POSITIONS.clone() *
-                            scoring::KEYBOARD_AVERAGE_DEGREE.clone() *
-                            (m.token.len() - 1)) as u64 *
-                           (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
+        let base_guesses =
+            (*scoring::KEYBOARD_STARTING_POSITIONS * *scoring::KEYBOARD_AVERAGE_DEGREE *
+             (m.token.len() - 1)) as u64 * (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
         assert_eq!((scoring::SpatialEstimator {}).estimate(&mut m),
                    base_guesses);
     }
@@ -808,8 +807,8 @@ mod tests {
             .turns(Some(1))
             .shifted_count(Some(6))
             .build();
-        let base_guesses = scoring::KEYBOARD_STARTING_POSITIONS.clone() *
-                           scoring::KEYBOARD_AVERAGE_DEGREE.clone() *
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS *
+                           *scoring::KEYBOARD_AVERAGE_DEGREE *
                            (m.token.len() - 1) * 2;
         assert_eq!((scoring::SpatialEstimator {}).estimate(&mut m),
                    base_guesses as u64);
@@ -829,7 +828,7 @@ mod tests {
                 (1..::std::cmp::min(m.turns.unwrap() + 1, i))
                     .map(|j| {
                         scoring::n_ck(i - 1, j - 1) *
-                        (scoring::KEYBOARD_STARTING_POSITIONS.clone() *
+                        (*scoring::KEYBOARD_STARTING_POSITIONS *
                          scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
                         u64
                     })
