@@ -583,7 +583,9 @@ impl Matcher for RegexMatch {
                     .i(capture.get(0).unwrap().start())
                     .j(capture.get(0).unwrap().end() - 1)
                     .regex_name(Some(name))
-                    .regex_match(Some(capture.iter().map(|x| x.unwrap().as_str().to_string()).collect()))
+                    .regex_match(Some(capture.iter()
+                        .map(|x| x.unwrap().as_str().to_string())
+                        .collect()))
                     .build());
             }
         }
@@ -657,8 +659,9 @@ impl Matcher for DateMatch {
                 //
                 // ie, considering '111504', prefer 11-15-04 to 1-1-1504
                 // (interpreting '04' as 2004)
-                let metric =
-                    |candidate: &(i16, i8, i8)| (candidate.0 - super::scoring::REFERENCE_YEAR).abs();
+                let metric = |candidate: &(i16, i8, i8)| {
+                    (candidate.0 - *super::scoring::REFERENCE_YEAR).abs()
+                };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
                 matches.push(Match::default()
                     .pattern("date")
@@ -837,6 +840,7 @@ mod tests {
     use matching;
     use matching::Matcher;
     use std::collections::HashMap;
+    use time;
 
     #[test]
     fn test_translate() {
@@ -1248,12 +1252,12 @@ mod tests {
 
     #[test]
     fn test_date_matches_year_closest_to_reference_year() {
-        let password = "111504";
-        let matches = (matching::DateMatch {}).get_matches(password, &None);
+        let password = format!("1115{}", time::now_utc().tm_year % 100);
+        let matches = (matching::DateMatch {}).get_matches(&password, &None);
         let m = matches.iter().find(|m| &m.token == &password).unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, password.len() - 1);
-        assert_eq!(m.year, Some(2004));
+        assert_eq!(m.year, Some(time::now_utc().tm_year as i16 + 1900));
         assert_eq!(m.month, Some(11));
         assert_eq!(m.day, Some(15));
         assert_eq!(m.separator, Some("".to_string()));

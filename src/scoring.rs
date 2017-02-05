@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::cmp;
+use time;
 use matching::Match;
 
 #[derive(Debug, Clone)]
@@ -27,8 +28,10 @@ struct Optimal {
     g: Vec<HashMap<usize, u64>>,
 }
 
-#[doc(hidden)]
-pub const REFERENCE_YEAR: i16 = 2000;
+lazy_static! {
+    #[doc(hidden)]
+    pub static ref REFERENCE_YEAR: i16 = time::now_utc().tm_year as i16 + 1900;
+}
 const MIN_YEAR_SPACE: i16 = 20;
 const BRUTEFORCE_CARDINALITY: u64 = 10;
 const MIN_GUESSES_BEFORE_GROWING_SEQUENCE: u64 = 10000;
@@ -444,8 +447,9 @@ impl Estimator for RegexEstimator {
         } else {
             match m.regex_name {
                 Some("recent_year") => {
-                    let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap() -
-                                      REFERENCE_YEAR)
+                    let year_space = (m.regex_match.as_ref().unwrap()[0]
+                            .parse::<i16>()
+                            .unwrap() - *REFERENCE_YEAR)
                         .abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
                 }
@@ -473,7 +477,7 @@ struct DateEstimator {}
 impl Estimator for DateEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         // base guesses: (year distance from REFERENCE_YEAR) * num_days * num_years
-        let year_space = cmp::max((m.year.unwrap() - REFERENCE_YEAR).abs(), MIN_YEAR_SPACE);
+        let year_space = cmp::max((m.year.unwrap() - *REFERENCE_YEAR).abs(), MIN_YEAR_SPACE);
         let mut guesses = year_space as u64 * 365;
         // add factor of 4 for separator selection (one of ~4 choices)
         if let Some(ref separator) = m.separator {
@@ -722,7 +726,7 @@ mod tests {
             .regex_match(Some(vec!["1972".to_string()]))
             .build();
         assert_eq!((scoring::RegexEstimator {}).estimate(&mut m),
-                   (scoring::REFERENCE_YEAR - 1972).abs() as u64);
+                   (*scoring::REFERENCE_YEAR - 1972).abs() as u64);
     }
 
     #[test]
@@ -746,7 +750,7 @@ mod tests {
             .day(Some(1))
             .build();
         assert_eq!((scoring::DateEstimator {}).estimate(&mut m),
-                   365 * (scoring::REFERENCE_YEAR - m.year.unwrap()).abs() as u64);
+                   365 * (*scoring::REFERENCE_YEAR - m.year.unwrap()).abs() as u64);
     }
 
     #[test]
@@ -824,8 +828,10 @@ mod tests {
             .map(|i| {
                 (1..::std::cmp::min(m.turns.unwrap() + 1, i))
                     .map(|j| {
-                        scoring::n_ck(i - 1, j - 1) * (scoring::KEYBOARD_STARTING_POSITIONS.clone() *
-                        scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as u64
+                        scoring::n_ck(i - 1, j - 1) *
+                        (scoring::KEYBOARD_STARTING_POSITIONS.clone() *
+                         scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
+                        u64
                     })
                     .sum::<u64>()
             })
