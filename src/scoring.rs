@@ -74,25 +74,16 @@ pub fn most_guessable_match_sequence(password: &str,
             // we're considering a length-l sequence ending with match m:
             // obtain the product term in the minimization function by multiplying m's guesses
             // by the product of the length-(l-1) sequence ending just before m, at m.i - 1.
-            pi = match pi.checked_mul(optimal.pi[m.i - 1][&(len - 1)]) {
-                Some(r) => r,
-                None => ::std::u64::MAX,
-            };
+            pi = pi.saturating_mul(optimal.pi[m.i - 1][&(len - 1)]);
         }
         // calculate the minimization func
-        let mut guesses = match (factorial(len) as u64).checked_mul(pi) {
-            Some(r) => r,
-            None => ::std::u64::MAX,
-        };
+        let mut guesses = (factorial(len) as u64).saturating_mul(pi);
         if !exclude_additive {
             let additive = if len == 1 {
                 1
             } else {
                 (2..len).fold(MIN_GUESSES_BEFORE_GROWING_SEQUENCE,
-                              |acc, _| match acc.checked_mul(MIN_GUESSES_BEFORE_GROWING_SEQUENCE) {
-                                  Some(r) => r,
-                                  None => ::std::u64::MAX,
-                              })
+                              |acc, _| acc.saturating_mul(MIN_GUESSES_BEFORE_GROWING_SEQUENCE))
             };
             guesses = match guesses.checked_add(additive) {
                 Some(r) => r,
@@ -258,12 +249,7 @@ impl Estimator for BruteForceEstimator {
         let mut guesses = BRUTEFORCE_CARDINALITY;
         if m.token.len() >= 2 {
             for _ in 2..m.token.len() {
-                guesses = match guesses.checked_mul(BRUTEFORCE_CARDINALITY) {
-                    Some(r) => r,
-                    None => {
-                        return ::std::u64::MAX;
-                    }
-                }
+                guesses = guesses.saturating_mul(BRUTEFORCE_CARDINALITY);
             }
         }
         // small detail: make bruteforce matches at minimum one guess bigger than smallest allowed
@@ -347,12 +333,7 @@ fn n_ck(n: usize, k: usize) -> u64 {
         let mut r: usize = 1;
         let mut n = n;
         for d in 1..(k + 1) {
-            r = match r.checked_mul(n) {
-                Some(res) => res,
-                None => {
-                    return ::std::u64::MAX;
-                }
-            };
+            r = r.saturating_mul(n);
             r /= d;
             n -= 1;
         }

@@ -45,7 +45,7 @@ pub struct CrackTimesDisplay {
 #[doc(hidden)]
 pub fn estimate_attack_times(guesses: u64) -> (CrackTimes, CrackTimesDisplay, u8) {
     let crack_times_seconds = CrackTimes {
-        online_throttling_100_per_hour: guesses * 36,
+        online_throttling_100_per_hour: guesses.saturating_mul(36),
         online_no_throttling_10_per_second: guesses / 10,
         offline_slow_hashing_1e4_per_second: guesses / 10_000,
         offline_fast_hashing_1e10_per_second: guesses / 10_000_000_000,

@@ -1,3 +1,7 @@
+**Version 0.4.1**
+ - Fix more overflow bugs
+ - Simplify code for handling overflows
+
 **Version 0.4.0**
  - Fix bug which caused multiplication overflows on some very strong passwords
  - Remove rustc-serialize support (https://github.com/shssoichiro/zxcvbn-rs/issues/5)
