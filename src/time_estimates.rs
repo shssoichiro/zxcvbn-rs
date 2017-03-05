@@ -3,7 +3,6 @@
 
 /// Back-of-the-envelope crack time estimations, in seconds, based on a few scenarios
 #[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct CrackTimes {
     /// Online attack on a service that rate-limits password attempts
@@ -25,7 +24,6 @@ pub struct CrackTimes {
 /// Back-of-the-envelope crack time estimations, in a human-readable format,
 /// based on a few scenarios
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct CrackTimesDisplay {
     /// Online attack on a service that rate-limits password attempts

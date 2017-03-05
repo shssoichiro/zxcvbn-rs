@@ -5,7 +5,6 @@ use super::matching::Match;
 
 /// Verbal feedback to help choose better passwords
 #[derive(Debug, Clone, Default)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Feedback {
     /// Explains what's wrong, e.g. "This is a top-10 common password". Not always set.

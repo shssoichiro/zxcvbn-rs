@@ -25,8 +25,6 @@ extern crate macro_attr;
 extern crate onig;
 extern crate regex;
 extern crate time;
-#[cfg(feature = "rustc-serialize")]
-extern crate rustc_serialize;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
@@ -49,7 +47,6 @@ pub mod time_estimates;
 
 /// Contains the results of an entropy calculation
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Entropy {
     /// Estimated guesses needed to crack the password

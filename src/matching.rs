@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 macro_attr! {
     #[derive(Debug, Clone, Default, PartialEq, Builder!)]
-    #[cfg_attr(feature = "rustc-serialize", derive(RustcEncodable))]
     #[cfg_attr(feature = "ser", derive(Serialize))]
     pub struct Match {
         pub pattern: &'static str,

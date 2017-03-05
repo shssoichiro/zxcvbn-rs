@@ -85,9 +85,18 @@ pub fn most_guessable_match_sequence(password: &str,
             None => ::std::u64::MAX,
         };
         if !exclude_additive {
-            guesses = match guesses.checked_add(MIN_GUESSES_BEFORE_GROWING_SEQUENCE.pow((len - 1) as u32)) {
+            let additive = if len == 1 {
+                1
+            } else {
+                (2..len).fold(MIN_GUESSES_BEFORE_GROWING_SEQUENCE,
+                              |acc, _| match acc.checked_mul(MIN_GUESSES_BEFORE_GROWING_SEQUENCE) {
+                                  Some(r) => r,
+                                  None => ::std::u64::MAX,
+                              })
+            };
+            guesses = match guesses.checked_add(additive) {
                 Some(r) => r,
-                None => ::std::u64::MAX
+                None => ::std::u64::MAX,
             };
         }
         // update state if new best.
