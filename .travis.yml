@@ -1,5 +1,5 @@
 language: rust
-script: cargo test --features "serde rustc-serialize"
+script: cargo test --features "ser"
 
 matrix:
   include:
