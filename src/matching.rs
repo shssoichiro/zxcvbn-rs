@@ -1,5 +1,5 @@
+use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
-use onig::Regex as OnigRegex;
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -120,14 +120,14 @@ impl Matcher for DictionaryMatch {
                     let word = &password_lower[i..(j + 1)];
                     if let Some(rank) = ranked_dict.get(word) {
                         matches.push(Match::default()
-                            .pattern("dictionary")
-                            .i(i)
-                            .j(j)
-                            .token(password[i..(j + 1)].to_string())
-                            .matched_word(Some(word.to_string()))
-                            .rank(Some(*rank))
-                            .dictionary_name(Some(dictionary_name))
-                            .build());
+                                         .pattern("dictionary")
+                                         .i(i)
+                                         .j(j)
+                                         .token(password[i..(j + 1)].to_string())
+                                         .matched_word(Some(word.to_string()))
+                                         .rank(Some(*rank))
+                                         .dictionary_name(Some(dictionary_name))
+                                         .build());
                     }
                 }
             }
@@ -162,7 +162,10 @@ impl Matcher for ReverseDictionaryMatch {
             .into_iter()
             .map(|mut x| {
                 // Reverse token back
-                x.token = x.token.chars().rev().collect();
+                x.token = x.token
+                    .chars()
+                    .rev()
+                    .collect();
                 x.reversed = true;
                 x.i = password.len() - 1 - x.j;
                 x.j = password.len() - 1 - x.i;
@@ -215,8 +218,10 @@ fn relevant_l33t_subtable(password: &str) -> HashMap<char, Vec<char>> {
     let password_chars: Vec<char> = password.chars().collect();
     let mut subtable: HashMap<char, Vec<char>> = HashMap::new();
     for (letter, subs) in L33T_TABLE.iter() {
-        let relevant_subs: Vec<char> =
-            subs.iter().filter(|&x| password_chars.contains(x)).cloned().collect();
+        let relevant_subs: Vec<char> = subs.iter()
+            .filter(|&x| password_chars.contains(x))
+            .cloned()
+            .collect();
         if !relevant_subs.is_empty() {
             subtable.insert(*letter, relevant_subs);
         }
@@ -258,16 +263,26 @@ fn enumerate_l33t_replacements(table: &HashMap<char, Vec<char>>) -> Vec<HashMap<
             }
         }
         helper(table,
-               next_subs.into_iter().map(|x| x.iter().unique().cloned().collect()).collect(),
+               next_subs.into_iter()
+                   .map(|x| {
+                            x.iter()
+                                .unique()
+                                .cloned()
+                                .collect()
+                        })
+                   .collect(),
                rest_keys)
     }
 
     helper(table,
            vec![vec![]],
-           table.keys().cloned().collect::<Vec<char>>().as_slice())
-        .into_iter()
-        .map(|sub| sub.into_iter().collect::<HashMap<char, char>>())
-        .collect()
+           table.keys()
+               .cloned()
+               .collect::<Vec<char>>()
+               .as_slice())
+            .into_iter()
+            .map(|sub| sub.into_iter().collect::<HashMap<char, char>>())
+            .collect()
 }
 
 struct SpatialMatch {}
@@ -347,14 +362,14 @@ fn spatial_match_helper(password: &str,
                 if j - i > 2 {
                     // Don't consider length 1 or 2 chains
                     matches.push(Match::default()
-                        .pattern("spatial")
-                        .i(i)
-                        .j(j - 1)
-                        .token(password[i..j].to_string())
-                        .graph(Some(graph_name.to_string()))
-                        .turns(Some(turns))
-                        .shifted_count(Some(shifted_count))
-                        .build());
+                                     .pattern("spatial")
+                                     .i(i)
+                                     .j(j - 1)
+                                     .token(password[i..j].to_string())
+                                     .graph(Some(graph_name.to_string()))
+                                     .turns(Some(turns))
+                                     .shifted_count(Some(shifted_count))
+                                     .build());
                 }
                 i = j;
                 break;
@@ -371,20 +386,20 @@ impl Matcher for RepeatMatch {
                    password: &str,
                    user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        // Required to use regex library that supports backtraces;
-        // no other reasonable way to detect repeats
-        let greedy_regex: OnigRegex = OnigRegex::new(r"(.+)\1+").unwrap();
-        let lazy_regex: OnigRegex = OnigRegex::new(r"(.+?)\1+").unwrap();
-        let lazy_anchored_regex: OnigRegex = OnigRegex::new(r"^(.+?)\1+$").unwrap();
+        lazy_static! {
+            static ref GREEDY_REGEX: FancyRegex = FancyRegex::new(r"(.+)\1+").unwrap();
+            static ref LAZY_REGEX: FancyRegex = FancyRegex::new(r"(.+?)\1+").unwrap();
+            static ref LAZY_ANCHORED_REGEX: FancyRegex = FancyRegex::new(r"^(.+?)\1+$").unwrap();
+        }
 
         let mut matches = Vec::new();
         let mut last_index = 0;
         while last_index < password.len() {
-            let greedy_matches = greedy_regex.captures(&password[last_index..]);
+            let greedy_matches = GREEDY_REGEX.captures(&password[last_index..]).unwrap();
             if greedy_matches.is_none() {
                 break;
             }
-            let lazy_matches = lazy_regex.captures(&password[last_index..]);
+            let lazy_matches = LAZY_REGEX.captures(&password[last_index..]).unwrap();
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
             let m4tch;
@@ -398,7 +413,8 @@ impl Matcher for RepeatMatch {
                 // aabaab in aabaabaabaab.
                 // run an anchored lazy match on greedy's repeated string
                 // to find the shortest repeated string
-                lazy_anchored_regex.captures(m4tch.at(0).unwrap())
+                LAZY_ANCHORED_REGEX.captures(m4tch.at(0).unwrap())
+                    .unwrap()
                     .unwrap()
                     .at(1)
                     .unwrap()
@@ -420,15 +436,15 @@ impl Matcher for RepeatMatch {
             let base_matches = base_analysis.sequence;
             let base_guesses = base_analysis.guesses;
             matches.push(Match::default()
-                .pattern("repeat")
-                .i(i)
-                .j(j)
-                .token(m4tch.at(0).unwrap().to_string())
-                .repeat_count(m4tch.at(0).unwrap().len() / base_token.len())
-                .base_token(base_token)
-                .base_guesses(base_guesses)
-                .base_matches(Some(base_matches))
-                .build());
+                             .pattern("repeat")
+                             .i(i)
+                             .j(j)
+                             .token(m4tch.at(0).unwrap().to_string())
+                             .repeat_count(m4tch.at(0).unwrap().len() / base_token.len())
+                             .base_token(base_token)
+                             .base_guesses(base_guesses)
+                             .base_matches(Some(base_matches))
+                             .build());
             last_index = j + 1;
         }
         matches
@@ -479,14 +495,14 @@ impl Matcher for SequenceMatch {
                     sequence_space = 26;
                 }
                 matches.push(Match::default()
-                    .pattern("sequence")
-                    .i(i)
-                    .j(j)
-                    .token(token.to_string())
-                    .sequence_name(sequence_name)
-                    .sequence_space(sequence_space)
-                    .ascending(Some(delta > 0))
-                    .build());
+                                 .pattern("sequence")
+                                 .i(i)
+                                 .j(j)
+                                 .token(token.to_string())
+                                 .sequence_name(sequence_name)
+                                 .sequence_space(sequence_space)
+                                 .ascending(Some(delta > 0))
+                                 .build());
             }
         }
 
@@ -531,15 +547,17 @@ impl Matcher for RegexMatch {
             for capture in regex.captures_iter(password) {
                 let token = &capture[0];
                 matches.push(Match::default()
-                    .pattern("regex")
-                    .token(token.to_string())
-                    .i(capture.get(0).unwrap().start())
-                    .j(capture.get(0).unwrap().end() - 1)
-                    .regex_name(Some(name))
-                    .regex_match(Some(capture.iter()
-                        .map(|x| x.unwrap().as_str().to_string())
-                        .collect()))
-                    .build());
+                                 .pattern("regex")
+                                 .token(token.to_string())
+                                 .i(capture.get(0).unwrap().start())
+                                 .j(capture.get(0).unwrap().end() - 1)
+                                 .regex_name(Some(name))
+                                 .regex_match(Some(capture.iter()
+                                                       .map(|x| {
+                                                                x.unwrap().as_str().to_string()
+                                                            })
+                                                       .collect()))
+                                 .build());
             }
         }
         matches
@@ -617,15 +635,15 @@ impl Matcher for DateMatch {
                 };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
                 matches.push(Match::default()
-                    .pattern("date")
-                    .token(token.to_string())
-                    .i(i)
-                    .j(j)
-                    .separator("".to_string())
-                    .year(best_candidate.0)
-                    .month(best_candidate.1)
-                    .day(best_candidate.2)
-                    .build());
+                                 .pattern("date")
+                                 .token(token.to_string())
+                                 .i(i)
+                                 .j(j)
+                                 .separator("".to_string())
+                                 .year(best_candidate.0)
+                                 .month(best_candidate.1)
+                                 .day(best_candidate.2)
+                                 .build());
             }
         }
 
@@ -652,15 +670,15 @@ impl Matcher for DateMatch {
                                               captures[5].parse().unwrap());
                     if let Some(ymd) = ymd {
                         matches.push(Match::default()
-                            .pattern("date")
-                            .token(token.to_string())
-                            .i(i)
-                            .j(j)
-                            .separator(captures[2].to_string())
-                            .year(ymd.0)
-                            .month(ymd.1)
-                            .day(ymd.2)
-                            .build());
+                                         .pattern("date")
+                                         .token(token.to_string())
+                                         .i(i)
+                                         .j(j)
+                                         .separator(captures[2].to_string())
+                                         .year(ymd.0)
+                                         .month(ymd.1)
+                                         .day(ymd.2)
+                                         .build());
                     }
                 }
             }
@@ -917,8 +935,8 @@ mod tests {
                                    ('c', vec!['(', '{']),
                                    ('g', vec!['6']),
                                    ('o', vec!['0'])]
-                                  .into_iter()
-                                  .collect())];
+                                      .into_iter()
+                                      .collect())];
         for (pw, expected) in test_data {
             assert_eq!(matching::relevant_l33t_subtable(pw), expected);
         }

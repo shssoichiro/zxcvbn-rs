@@ -6,10 +6,11 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "0.4.1"
+version = "0.4.2"
 
 [dependencies]
 derive_builder = "0.2.1"
+fancy-regex = "0.1.0"
 itertools = "0.5.8"
 lazy_static = "0.2.2"
 macro-attr = "0.2.0"
@@ -19,10 +20,6 @@ time = "0.1.35"
 [dependencies.clippy]
 optional = true
 version = ">=0.0.100"
-
-[dependencies.onig]
-features = ["static-libonig"]
-version = "1.2.0"
 
 [dependencies.serde_derive]
 optional = true

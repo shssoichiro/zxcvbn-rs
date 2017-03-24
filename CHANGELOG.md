@@ -1,3 +1,6 @@
+**Version 0.4.2**
+ - Remove FFI dependency on oniguruma
+
 **Version 0.4.1**
  - Fix more overflow bugs
  - Simplify code for handling overflows

@@ -221,7 +221,11 @@ fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
     } else {
         1
     };
-    let guesses = ESTIMATION_FUNCTIONS.iter().find(|x| x.0 == m.pattern).unwrap().1.estimate(m);
+    let guesses = ESTIMATION_FUNCTIONS.iter()
+        .find(|x| x.0 == m.pattern)
+        .unwrap()
+        .1
+        .estimate(m);
     m.guesses = Some(cmp::max(guesses, min_guesses));
     m.guesses.unwrap()
 }
@@ -283,9 +287,14 @@ fn uppercase_variations(m: &Match) -> u64 {
     // a capitalized word is the most common capitalization scheme,
     // so it only doubles the search space (uncapitalized + capitalized).
     // allcaps and end-capitalized are common enough too, underestimate as 2x factor to be safe.
-    if ((word.chars().next().unwrap().is_uppercase() ||
-         word.chars().last().unwrap().is_uppercase()) &&
-        word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
+    if ((word.chars()
+             .next()
+             .unwrap()
+             .is_uppercase() ||
+         word.chars()
+             .last()
+             .unwrap()
+             .is_uppercase()) && word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
        word.chars().all(char::is_uppercase) {
         return 2;
     }
@@ -326,8 +335,8 @@ fn l33t_variations(m: &Match) -> u64 {
 fn n_ck(n: usize, k: usize) -> u64 {
     // http://blog.plover.com/math/choose.html
     (if k > n {
-        0
-    } else if k == 0 {
+         0
+     } else if k == 0 {
         1
     } else {
         let mut r: usize = 1;
@@ -346,8 +355,11 @@ struct SpatialEstimator {}
 impl Estimator for SpatialEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         #[allow(clone_on_copy)]
-        let (starts, degree) = if ["qwerty", "dvorak"]
-            .contains(&m.graph.as_ref().unwrap().as_str()) {
+        let (starts, degree) = if
+            ["qwerty", "dvorak"].contains(&m.graph
+                                               .as_ref()
+                                               .unwrap()
+                                               .as_str()) {
             (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
         } else {
             (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
@@ -408,7 +420,10 @@ struct SequenceEstimator {}
 
 impl Estimator for SequenceEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
-        let first_chr = m.token.chars().next().unwrap();
+        let first_chr = m.token
+            .chars()
+            .next()
+            .unwrap();
         // lower guesses for obvious starting points
         let mut base_guesses = if ['a', 'A', 'z', 'Z', '0', '1', '9'].contains(&first_chr) {
             4
@@ -437,10 +452,9 @@ impl Estimator for RegexEstimator {
         } else {
             match m.regex_name {
                 Some("recent_year") => {
-                    let year_space = (m.regex_match.as_ref().unwrap()[0]
-                            .parse::<i16>()
-                            .unwrap() - *REFERENCE_YEAR)
-                        .abs();
+                    let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap() -
+                                      *REFERENCE_YEAR)
+                            .abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
                 }
                 _ => unreachable!(),
@@ -542,7 +556,11 @@ mod tests {
     #[test]
     fn test_search_returns_match_and_bruteforce_when_match_covers_prefix_of_password() {
         let password = "0123456789";
-        let m = Match::default().i(0usize).j(5usize).guesses(Some(1)).build();
+        let m = Match::default()
+            .i(0usize)
+            .j(5usize)
+            .guesses(Some(1))
+            .build();
 
         let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 2);
@@ -556,7 +574,11 @@ mod tests {
     #[test]
     fn test_search_returns_bruteforce_and_match_when_match_covers_a_suffix() {
         let password = "0123456789";
-        let m = Match::default().i(3usize).j(9usize).guesses(Some(1)).build();
+        let m = Match::default()
+            .i(3usize)
+            .j(9usize)
+            .guesses(Some(1))
+            .build();
 
         let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 2);
@@ -570,7 +592,11 @@ mod tests {
     #[test]
     fn test_search_returns_bruteforce_and_match_when_match_covers_an_infix() {
         let password = "0123456789";
-        let m = Match::default().i(1usize).j(8usize).guesses(Some(1)).build();
+        let m = Match::default()
+            .i(1usize)
+            .j(8usize)
+            .guesses(Some(1))
+            .build();
 
         let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 3);
@@ -588,8 +614,16 @@ mod tests {
     #[test]
     fn test_search_chooses_lower_guesses_match_given_two_matches_of_same_span() {
         let password = "0123456789";
-        let mut m0 = Match::default().i(0usize).j(9usize).guesses(Some(1)).build();
-        let m1 = Match::default().i(0usize).j(9usize).guesses(Some(2)).build();
+        let mut m0 = Match::default()
+            .i(0usize)
+            .j(9usize)
+            .guesses(Some(1))
+            .build();
+        let m1 = Match::default()
+            .i(0usize)
+            .j(9usize)
+            .guesses(Some(2))
+            .build();
 
         let result =
             scoring::most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
@@ -606,9 +640,21 @@ mod tests {
     #[test]
     fn test_search_when_m0_covers_m1_and_m2_choose_m0_when_m0_lt_m1_t_m2_t_fact_2() {
         let password = "0123456789";
-        let m0 = Match::default().i(0usize).j(9usize).guesses(Some(3)).build();
-        let m1 = Match::default().i(0usize).j(3usize).guesses(Some(2)).build();
-        let m2 = Match::default().i(4usize).j(9usize).guesses(Some(1)).build();
+        let m0 = Match::default()
+            .i(0usize)
+            .j(9usize)
+            .guesses(Some(3))
+            .build();
+        let m1 = Match::default()
+            .i(0usize)
+            .j(3usize)
+            .guesses(Some(2))
+            .build();
+        let m2 = Match::default()
+            .i(4usize)
+            .j(9usize)
+            .guesses(Some(1))
+            .build();
 
         let result = scoring::most_guessable_match_sequence(password,
                                                             &[m0.clone(), m1.clone(), m2.clone()],
@@ -620,9 +666,21 @@ mod tests {
     #[test]
     fn test_search_when_m0_covers_m1_and_m2_choose_m1_m2_when_m0_gt_m1_t_m2_t_fact_2() {
         let password = "0123456789";
-        let m0 = Match::default().i(0usize).j(9usize).guesses(Some(5)).build();
-        let m1 = Match::default().i(0usize).j(3usize).guesses(Some(2)).build();
-        let m2 = Match::default().i(4usize).j(9usize).guesses(Some(1)).build();
+        let m0 = Match::default()
+            .i(0usize)
+            .j(9usize)
+            .guesses(Some(5))
+            .build();
+        let m1 = Match::default()
+            .i(0usize)
+            .j(3usize)
+            .guesses(Some(2))
+            .build();
+        let m2 = Match::default()
+            .i(4usize)
+            .j(9usize)
+            .guesses(Some(1))
+            .build();
 
         let result = scoring::most_guessable_match_sequence(password,
                                                             &[m0.clone(), m1.clone(), m2.clone()],
@@ -662,7 +720,7 @@ mod tests {
                 scoring::most_guessable_match_sequence(base_token,
                                                        &::matching::omnimatch(base_token, &None),
                                                        false)
-                    .guesses;
+                        .guesses;
             let mut m = Match::default()
                 .token(token)
                 .base_token(Some(base_token.to_string()))
@@ -817,11 +875,11 @@ mod tests {
             .map(|i| {
                 (1..::std::cmp::min(m.turns.unwrap() + 1, i))
                     .map(|j| {
-                        scoring::n_ck(i - 1, j - 1) *
-                        (*scoring::KEYBOARD_STARTING_POSITIONS *
-                         scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
-                        u64
-                    })
+                             scoring::n_ck(i - 1, j - 1) *
+                             (*scoring::KEYBOARD_STARTING_POSITIONS *
+                              scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
+                             u64
+                         })
                     .sum::<u64>()
             })
             .sum::<u64>();
@@ -843,7 +901,11 @@ mod tests {
 
     #[test]
     fn test_dictionary_guesses_doubled_if_reversed() {
-        let mut m = Match::default().token("aaa").rank(Some(32)).reversed(true).build();
+        let mut m = Match::default()
+            .token("aaa")
+            .rank(Some(32))
+            .reversed(true)
+            .build();
         assert_eq!((scoring::DictionaryEstimator {}).estimate(&mut m), 32 * 2);
     }
 
@@ -851,7 +913,12 @@ mod tests {
     fn test_dictionary_guesses_added_for_l33t() {
         let mut subs = HashMap::with_capacity(1);
         subs.insert('@', 'a');
-        let mut m = Match::default().token("aaa@@@").rank(Some(32)).l33t(true).sub(subs).build();
+        let mut m = Match::default()
+            .token("aaa@@@")
+            .rank(Some(32))
+            .l33t(true)
+            .sub(subs)
+            .build();
         let expected = 32 * scoring::l33t_variations(&m);
         assert_eq!((scoring::DictionaryEstimator {}).estimate(&mut m), expected);
     }
@@ -860,7 +927,12 @@ mod tests {
     fn test_dictionary_guesses_added_for_caps_and_l33t() {
         let mut subs = HashMap::with_capacity(1);
         subs.insert('@', 'a');
-        let mut m = Match::default().token("AaA@@@").rank(Some(32)).l33t(true).sub(subs).build();
+        let mut m = Match::default()
+            .token("AaA@@@")
+            .rank(Some(32))
+            .l33t(true)
+            .sub(subs)
+            .build();
         let expected = 32 * scoring::l33t_variations(&m) * scoring::uppercase_variations(&m);
         assert_eq!((scoring::DictionaryEstimator {}).estimate(&mut m), expected);
     }
@@ -918,8 +990,11 @@ mod tests {
               (scoring::n_ck(4, 2) + scoring::n_ck(4, 1)) * scoring::n_ck(3, 1),
               vec![('4', 'a'), ('+', 't')].into_iter().collect::<HashMap<char, char>>())];
         for &(word, variants, ref sub) in &test_data {
-            let m =
-                Match::default().token(word).sub(Some(sub.clone())).l33t(!sub.is_empty()).build();
+            let m = Match::default()
+                .token(word)
+                .sub(Some(sub.clone()))
+                .l33t(!sub.is_empty())
+                .build();
             assert_eq!(scoring::l33t_variations(&m), variants);
         }
     }

@@ -17,12 +17,12 @@
 
 #[macro_use]
 extern crate derive_builder;
+extern crate fancy_regex;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate macro_attr;
-extern crate onig;
 extern crate regex;
 extern crate time;
 #[cfg(feature = "ser")]
@@ -96,8 +96,12 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
         password
     };
 
-    let sanitized_inputs =
-        user_inputs.map(|x| x.iter().enumerate().map(|(i, x)| (x.to_lowercase(), i + 1)).collect());
+    let sanitized_inputs = user_inputs.map(|x| {
+                                               x.iter()
+                                                   .enumerate()
+                                                   .map(|(i, x)| (x.to_lowercase(), i + 1))
+                                                   .collect()
+                                           });
 
     let matches = matching::omnimatch(password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(password, &matches, false);
@@ -107,15 +111,15 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
     let feedback = feedback::get_feedback(score, &matches);
 
     Some(Entropy {
-        guesses: result.guesses,
-        guesses_log10: result.guesses_log10,
-        crack_times_seconds: attack_times,
-        crack_times_display: attack_times_display,
-        score: score,
-        feedback: feedback,
-        sequence: result.sequence,
-        calc_time: calc_time,
-    })
+             guesses: result.guesses,
+             guesses_log10: result.guesses_log10,
+             crack_times_seconds: attack_times,
+             crack_times_display: attack_times_display,
+             score: score,
+             feedback: feedback,
+             sequence: result.sequence,
+             calc_time: calc_time,
+         })
 }
 
 #[cfg(test)]
