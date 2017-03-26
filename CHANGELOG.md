@@ -1,3 +1,6 @@
+**Version 0.4.3**
+ - Upgrade to derive_builder 0.4
+
 **Version 0.4.2**
  - Remove FFI dependency on oniguruma
 

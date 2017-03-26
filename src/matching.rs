@@ -3,41 +3,40 @@ use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashMap;
 
-macro_attr! {
-    #[derive(Debug, Clone, Default, PartialEq, Builder!)]
-    #[cfg_attr(feature = "ser", derive(Serialize))]
-    pub struct Match {
-        pub pattern: &'static str,
-        pub i: usize,
-        pub j: usize,
-        pub token: String,
-        pub matched_word: Option<String>,
-        pub rank: Option<usize>,
-        pub dictionary_name: Option<&'static str>,
-        pub graph: Option<String>,
-        pub reversed: bool,
-        pub l33t: bool,
-        pub sub: Option<HashMap<char, char>>,
-        pub sub_display: Option<String>,
-        pub turns: Option<usize>,
-        pub shifted_count: Option<usize>,
-        pub base_token: Option<String>,
-        pub base_matches: Option<Vec<Match>>,
-        pub base_guesses: Option<u64>,
-        pub repeat_count: Option<usize>,
-        pub sequence_name: Option<&'static str>,
-        pub sequence_space: Option<u8>,
-        pub ascending: Option<bool>,
-        pub regex_name: Option<&'static str>,
-        pub regex_match: Option<Vec<String>>,
-        pub separator: Option<String>,
-        pub year: Option<i16>,
-        pub month: Option<i8>,
-        pub day: Option<i8>,
-        pub guesses: Option<u64>,
-        pub uppercase_variations: Option<u64>,
-        pub l33t_variations: Option<u64>,
-    }
+#[derive(Debug, Clone, Default, PartialEq, Builder)]
+#[builder(default)]
+#[cfg_attr(feature = "ser", derive(Serialize))]
+pub struct Match {
+    pub pattern: &'static str,
+    pub i: usize,
+    pub j: usize,
+    pub token: String,
+    pub matched_word: Option<String>,
+    pub rank: Option<usize>,
+    pub dictionary_name: Option<&'static str>,
+    pub graph: Option<String>,
+    pub reversed: bool,
+    pub l33t: bool,
+    pub sub: Option<HashMap<char, char>>,
+    pub sub_display: Option<String>,
+    pub turns: Option<usize>,
+    pub shifted_count: Option<usize>,
+    pub base_token: Option<String>,
+    pub base_matches: Option<Vec<Match>>,
+    pub base_guesses: Option<u64>,
+    pub repeat_count: Option<usize>,
+    pub sequence_name: Option<&'static str>,
+    pub sequence_space: Option<u8>,
+    pub ascending: Option<bool>,
+    pub regex_name: Option<&'static str>,
+    pub regex_match: Option<Vec<String>>,
+    pub separator: Option<String>,
+    pub year: Option<i16>,
+    pub month: Option<i8>,
+    pub day: Option<i8>,
+    pub guesses: Option<u64>,
+    pub uppercase_variations: Option<u64>,
+    pub l33t_variations: Option<u64>,
 }
 
 impl Match {
@@ -119,7 +118,7 @@ impl Matcher for DictionaryMatch {
                 for j in i..len {
                     let word = &password_lower[i..(j + 1)];
                     if let Some(rank) = ranked_dict.get(word) {
-                        matches.push(Match::default()
+                        matches.push(MatchBuilder::default()
                                          .pattern("dictionary")
                                          .i(i)
                                          .j(j)
@@ -127,7 +126,8 @@ impl Matcher for DictionaryMatch {
                                          .matched_word(Some(word.to_string()))
                                          .rank(Some(*rank))
                                          .dictionary_name(Some(dictionary_name))
-                                         .build());
+                                         .build()
+                                         .unwrap());
                     }
                 }
             }
@@ -361,7 +361,7 @@ fn spatial_match_helper(password: &str,
                 // otherwise push the pattern discovered so far, if any...
                 if j - i > 2 {
                     // Don't consider length 1 or 2 chains
-                    matches.push(Match::default()
+                    matches.push(MatchBuilder::default()
                                      .pattern("spatial")
                                      .i(i)
                                      .j(j - 1)
@@ -369,7 +369,8 @@ fn spatial_match_helper(password: &str,
                                      .graph(Some(graph_name.to_string()))
                                      .turns(Some(turns))
                                      .shifted_count(Some(shifted_count))
-                                     .build());
+                                     .build()
+                                     .unwrap());
                 }
                 i = j;
                 break;
@@ -435,16 +436,18 @@ impl Matcher for RepeatMatch {
                                                               false);
             let base_matches = base_analysis.sequence;
             let base_guesses = base_analysis.guesses;
-            matches.push(Match::default()
+            matches.push(MatchBuilder::default()
                              .pattern("repeat")
                              .i(i)
                              .j(j)
                              .token(m4tch.at(0).unwrap().to_string())
-                             .repeat_count(m4tch.at(0).unwrap().len() / base_token.len())
-                             .base_token(base_token)
-                             .base_guesses(base_guesses)
+                             .repeat_count(Some(m4tch.at(0).unwrap().len() /
+                                                base_token.len()))
+                             .base_token(Some(base_token))
+                             .base_guesses(Some(base_guesses))
                              .base_matches(Some(base_matches))
-                             .build());
+                             .build()
+                             .unwrap());
             last_index = j + 1;
         }
         matches
@@ -494,15 +497,16 @@ impl Matcher for SequenceMatch {
                     sequence_name = "unicode";
                     sequence_space = 26;
                 }
-                matches.push(Match::default()
+                matches.push(MatchBuilder::default()
                                  .pattern("sequence")
                                  .i(i)
                                  .j(j)
                                  .token(token.to_string())
-                                 .sequence_name(sequence_name)
-                                 .sequence_space(sequence_space)
+                                 .sequence_name(Some(sequence_name))
+                                 .sequence_space(Some(sequence_space))
                                  .ascending(Some(delta > 0))
-                                 .build());
+                                 .build()
+                                 .unwrap());
             }
         }
 
@@ -546,7 +550,7 @@ impl Matcher for RegexMatch {
         for (&name, regex) in REGEXES.iter() {
             for capture in regex.captures_iter(password) {
                 let token = &capture[0];
-                matches.push(Match::default()
+                matches.push(MatchBuilder::default()
                                  .pattern("regex")
                                  .token(token.to_string())
                                  .i(capture.get(0).unwrap().start())
@@ -557,7 +561,8 @@ impl Matcher for RegexMatch {
                                                                 x.unwrap().as_str().to_string()
                                                             })
                                                        .collect()))
-                                 .build());
+                                 .build()
+                                 .unwrap());
             }
         }
         matches
@@ -634,16 +639,17 @@ impl Matcher for DateMatch {
                     (candidate.0 - *super::scoring::REFERENCE_YEAR).abs()
                 };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
-                matches.push(Match::default()
+                matches.push(MatchBuilder::default()
                                  .pattern("date")
                                  .token(token.to_string())
                                  .i(i)
                                  .j(j)
-                                 .separator("".to_string())
-                                 .year(best_candidate.0)
-                                 .month(best_candidate.1)
-                                 .day(best_candidate.2)
-                                 .build());
+                                 .separator(Some("".to_string()))
+                                 .year(Some(best_candidate.0))
+                                 .month(Some(best_candidate.1))
+                                 .day(Some(best_candidate.2))
+                                 .build()
+                                 .unwrap());
             }
         }
 
@@ -669,16 +675,17 @@ impl Matcher for DateMatch {
                                               captures[3].parse().unwrap(),
                                               captures[5].parse().unwrap());
                     if let Some(ymd) = ymd {
-                        matches.push(Match::default()
+                        matches.push(MatchBuilder::default()
                                          .pattern("date")
                                          .token(token.to_string())
                                          .i(i)
                                          .j(j)
-                                         .separator(captures[2].to_string())
-                                         .year(ymd.0)
-                                         .month(ymd.1)
-                                         .day(ymd.2)
-                                         .build());
+                                         .separator(Some(captures[2].to_string()))
+                                         .year(Some(ymd.0))
+                                         .month(Some(ymd.1))
+                                         .day(Some(ymd.2))
+                                         .build()
+                                         .unwrap());
                     }
                 }
             }

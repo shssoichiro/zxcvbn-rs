@@ -6,14 +6,13 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "0.4.2"
+version = "0.4.3"
 
 [dependencies]
-derive_builder = "0.2.1"
+derive_builder = "0.4.0"
 fancy-regex = "0.1.0"
 itertools = "0.5.8"
 lazy_static = "0.2.2"
-macro-attr = "0.2.0"
 regex = "0.2.0"
 time = "0.1.35"
 

@@ -21,8 +21,6 @@ extern crate fancy_regex;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate macro_attr;
 extern crate regex;
 extern crate time;
 #[cfg(feature = "ser")]
