@@ -30,10 +30,10 @@ some nightly-exclusive features such as SIMD which may improve performance.
 
 ```toml
 [dependencies]
-zxcvbn = { version = "0.3.0", features = ["unstable"] }
+zxcvbn = { version = "0.4.0", features = ["unstable"] }
 ```
 
-Likewise, zxcvbn has feature flags for "rustc-serialize" and "ser" if you require serialization support.
+Likewise, zxcvbn has a "ser" feature flag if you require serialization support via `serde`.
 
 zxcvbn follows Semantic Versioning.
 
