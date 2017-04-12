@@ -144,7 +144,7 @@ pub fn most_guessable_match_sequence(password: &str,
 
     /// helper: step backwards through optimal.m starting at the end,
     /// constructing the final optimal match sequence.
-    #[allow(many_single_char_names)]
+    #[cfg_attr(feature = "clippy", allow(many_single_char_names))]
     fn unwind(n: usize, optimal: &mut Optimal) -> Vec<Match> {
         let mut optimal_match_sequence = Vec::new();
         let mut k = n - 1;
