@@ -6,12 +6,11 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "0.4.3"
+version = "0.4.4"
 
 [dependencies]
-derive_builder = "0.4.0"
 fancy-regex = "0.1.0"
-itertools = "0.5.8"
+itertools = "0.6.0"
 lazy_static = "0.2.2"
 regex = "0.2.0"
 time = "0.1.35"
@@ -19,6 +18,10 @@ time = "0.1.35"
 [dependencies.clippy]
 optional = true
 version = ">=0.0.100"
+
+[dependencies.derive_builder]
+version = "0.4.1"
+features = ["struct_default"]
 
 [dependencies.serde_derive]
 optional = true

@@ -222,7 +222,8 @@ fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
     } else {
         1
     };
-    let guesses = ESTIMATION_FUNCTIONS.iter()
+    let guesses = ESTIMATION_FUNCTIONS
+        .iter()
         .find(|x| x.0 == m.pattern)
         .unwrap()
         .1
@@ -288,14 +289,9 @@ fn uppercase_variations(m: &Match) -> u64 {
     // a capitalized word is the most common capitalization scheme,
     // so it only doubles the search space (uncapitalized + capitalized).
     // allcaps and end-capitalized are common enough too, underestimate as 2x factor to be safe.
-    if ((word.chars()
-             .next()
-             .unwrap()
-             .is_uppercase() ||
-         word.chars()
-             .last()
-             .unwrap()
-             .is_uppercase()) && word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
+    if ((word.chars().next().unwrap().is_uppercase() ||
+         word.chars().last().unwrap().is_uppercase()) &&
+        word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
        word.chars().all(char::is_uppercase) {
         return 2;
     }
@@ -304,7 +300,9 @@ fn uppercase_variations(m: &Match) -> u64 {
     // the number of ways to lowercase U+L letters with L lowercase letters or less.
     let upper = word.chars().filter(|c| c.is_uppercase()).count();
     let lower = word.chars().filter(|c| c.is_lowercase()).count();
-    (1..(cmp::min(upper, lower) + 1)).map(|i| n_ck(upper + lower, i)).sum()
+    (1..(cmp::min(upper, lower) + 1))
+        .map(|i| n_ck(upper + lower, i))
+        .sum()
 }
 
 fn l33t_variations(m: &Match) -> u64 {
@@ -357,10 +355,7 @@ impl Estimator for SpatialEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         #[allow(clone_on_copy)]
         let (starts, degree) = if
-            ["qwerty", "dvorak"].contains(&m.graph
-                                               .as_ref()
-                                               .unwrap()
-                                               .as_str()) {
+            ["qwerty", "dvorak"].contains(&m.graph.as_ref().unwrap().as_str()) {
             (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
         } else {
             (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
@@ -404,8 +399,10 @@ lazy_static! {
 }
 
 fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> usize {
-    let sum: usize =
-        graph.values().map(|neighbors| neighbors.iter().filter(|n| n.is_some()).count()).sum();
+    let sum: usize = graph
+        .values()
+        .map(|neighbors| neighbors.iter().filter(|n| n.is_some()).count())
+        .sum();
     sum / graph.len()
 }
 
@@ -421,10 +418,7 @@ struct SequenceEstimator {}
 
 impl Estimator for SequenceEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
-        let first_chr = m.token
-            .chars()
-            .next()
-            .unwrap();
+        let first_chr = m.token.chars().next().unwrap();
         // lower guesses for obvious starting points
         let mut base_guesses = if ['a', 'A', 'z', 'Z', '0', '1', '9'].contains(&first_chr) {
             4
@@ -448,12 +442,16 @@ struct RegexEstimator {}
 
 impl Estimator for RegexEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
-        if CHAR_CLASS_BASES.keys().any(|x| x == &m.regex_name.unwrap()) {
+        if CHAR_CLASS_BASES
+               .keys()
+               .any(|x| x == &m.regex_name.unwrap()) {
             CHAR_CLASS_BASES[m.regex_name.unwrap()].pow(m.token.len() as u32)
         } else {
             match m.regex_name {
                 Some("recent_year") => {
-                    let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap() -
+                    let year_space = (m.regex_match.as_ref().unwrap()[0]
+                                          .parse::<i16>()
+                                          .unwrap() -
                                       *REFERENCE_YEAR)
                             .abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
@@ -703,7 +701,10 @@ mod tests {
 
     #[test]
     fn test_calc_guesses_returns_guesses_when_cached() {
-        let mut m = MatchBuilder::default().guesses(Some(1)).build().unwrap();
+        let mut m = MatchBuilder::default()
+            .guesses(Some(1))
+            .build()
+            .unwrap();
         assert_eq!(scoring::estimate_guesses(&mut m, ""), 1);
     }
 
@@ -1008,30 +1009,59 @@ mod tests {
 
     #[test]
     fn test_l33t_variations() {
-        let test_data =
-            [("", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
-             ("a", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
-             ("4", 2, vec![('4', 'a')].into_iter().collect::<HashMap<char, char>>()),
-             ("4pple", 2, vec![('4', 'a')].into_iter().collect::<HashMap<char, char>>()),
-             ("abcet", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
-             ("4bcet", 2, vec![('4', 'a')].into_iter().collect::<HashMap<char, char>>()),
-             ("a8cet", 2, vec![('8', 'b')].into_iter().collect::<HashMap<char, char>>()),
-             ("abce+", 2, vec![('+', 't')].into_iter().collect::<HashMap<char, char>>()),
-             ("48cet",
-              4,
-              vec![('4', 'a'), ('8', 'b')].into_iter().collect::<HashMap<char, char>>()),
-             ("a4a4aa",
-              scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
-              vec![('4', 'a')].into_iter().collect::<HashMap<char, char>>()),
-             ("4a4a44",
-              scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
-              vec![('4', 'a')].into_iter().collect::<HashMap<char, char>>()),
-             ("Aa44aA",
-              scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
-              vec![('4', 'a')].into_iter().collect::<HashMap<char, char>>()),
-             ("a44att+",
-              (scoring::n_ck(4, 2) + scoring::n_ck(4, 1)) * scoring::n_ck(3, 1),
-              vec![('4', 'a'), ('+', 't')].into_iter().collect::<HashMap<char, char>>())];
+        let test_data = [("", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
+                         ("a", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
+                         ("4",
+                          2,
+                          vec![('4', 'a')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("4pple",
+                          2,
+                          vec![('4', 'a')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("abcet", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
+                         ("4bcet",
+                          2,
+                          vec![('4', 'a')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("a8cet",
+                          2,
+                          vec![('8', 'b')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("abce+",
+                          2,
+                          vec![('+', 't')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("48cet",
+                          4,
+                          vec![('4', 'a'), ('8', 'b')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("a4a4aa",
+                          scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
+                          vec![('4', 'a')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("4a4a44",
+                          scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
+                          vec![('4', 'a')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("Aa44aA",
+                          scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
+                          vec![('4', 'a')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>()),
+                         ("a44att+",
+                          (scoring::n_ck(4, 2) + scoring::n_ck(4, 1)) * scoring::n_ck(3, 1),
+                          vec![('4', 'a'), ('+', 't')]
+                              .into_iter()
+                              .collect::<HashMap<char, char>>())];
         for &(word, variants, ref sub) in &test_data {
             let m = MatchBuilder::default()
                 .token(word.to_string())

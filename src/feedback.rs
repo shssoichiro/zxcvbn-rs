@@ -128,10 +128,7 @@ fn get_dictionary_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feed
         return Feedback::default();
     }
 
-    if word.chars()
-           .next()
-           .unwrap()
-           .is_uppercase() {
+    if word.chars().next().unwrap().is_uppercase() {
         suggestions.push("Capitalization doesn't help very much.");
     } else if word.chars().all(char::is_uppercase) {
         suggestions.push("All-uppercase is almost as easy to guess as all-lowercase.");

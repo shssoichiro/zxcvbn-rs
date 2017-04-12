@@ -1,3 +1,6 @@
+**Version 0.4.4**
+ - Upgrade `itertools` to 0.6
+
 **Version 0.4.3**
  - Upgrade to derive_builder 0.4
 

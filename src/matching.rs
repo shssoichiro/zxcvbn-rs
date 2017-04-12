@@ -47,7 +47,8 @@ impl Match {
 
 #[doc(hidden)]
 pub fn omnimatch(password: &str, user_inputs: &Option<HashMap<String, usize>>) -> Vec<Match> {
-    MATCHERS.iter()
+    MATCHERS
+        .iter()
         .flat_map(|x| x.get_matches(password, user_inputs))
         .sorted_by(|a, b| Ord::cmp(&a.i, &b.i))
         .into_iter()
@@ -161,16 +162,13 @@ impl Matcher for ReverseDictionaryMatch {
             .get_matches(&reversed_password, user_inputs)
             .into_iter()
             .map(|mut x| {
-                // Reverse token back
-                x.token = x.token
-                    .chars()
-                    .rev()
-                    .collect();
-                x.reversed = true;
-                x.i = password.len() - 1 - x.j;
-                x.j = password.len() - 1 - x.i;
-                x
-            })
+                     // Reverse token back
+                     x.token = x.token.chars().rev().collect();
+                     x.reversed = true;
+                     x.i = password.len() - 1 - x.j;
+                     x.j = password.len() - 1 - x.i;
+                     x
+                 })
             .collect()
     }
 }
@@ -200,18 +198,26 @@ impl Matcher for L33tMatch {
                     .collect();
                 m4tch.l33t = true;
                 m4tch.token = token.to_string();
-                m4tch.sub_display =
-                    Some(match_sub.iter().map(|(k, v)| format!("{} -> {}", k, v)).collect());
+                m4tch.sub_display = Some(match_sub
+                                             .iter()
+                                             .map(|(k, v)| format!("{} -> {}", k, v))
+                                             .collect());
                 m4tch.sub = Some(match_sub);
                 matches.push(m4tch);
             }
         }
-        matches.into_iter().filter(|x| !x.token.is_empty()).collect()
+        matches
+            .into_iter()
+            .filter(|x| !x.token.is_empty())
+            .collect()
     }
 }
 
 fn translate(string: &str, chr_map: &HashMap<char, char>) -> String {
-    string.chars().map(|c| *chr_map.get(&c).unwrap_or(&c)).collect()
+    string
+        .chars()
+        .map(|c| *chr_map.get(&c).unwrap_or(&c))
+        .collect()
 }
 
 fn relevant_l33t_subtable(password: &str) -> HashMap<char, Vec<char>> {
@@ -263,23 +269,16 @@ fn enumerate_l33t_replacements(table: &HashMap<char, Vec<char>>) -> Vec<HashMap<
             }
         }
         helper(table,
-               next_subs.into_iter()
-                   .map(|x| {
-                            x.iter()
-                                .unique()
-                                .cloned()
-                                .collect()
-                        })
+               next_subs
+                   .into_iter()
+                   .map(|x| x.iter().unique().cloned().collect())
                    .collect(),
                rest_keys)
     }
 
     helper(table,
            vec![vec![]],
-           table.keys()
-               .cloned()
-               .collect::<Vec<char>>()
-               .as_slice())
+           table.keys().cloned().collect::<Vec<char>>().as_slice())
             .into_iter()
             .map(|sub| sub.into_iter().collect::<HashMap<char, char>>())
             .collect()
@@ -292,7 +291,8 @@ impl Matcher for SpatialMatch {
                    password: &str,
                    _user_inputs: &Option<HashMap<String, usize>>)
                    -> Vec<Match> {
-        GRAPHS.iter()
+        GRAPHS
+            .iter()
             .flat_map(|(graph_name, graph)| spatial_match_helper(password, graph, graph_name))
             .collect()
     }
@@ -414,7 +414,8 @@ impl Matcher for RepeatMatch {
                 // aabaab in aabaabaabaab.
                 // run an anchored lazy match on greedy's repeated string
                 // to find the shortest repeated string
-                LAZY_ANCHORED_REGEX.captures(m4tch.at(0).unwrap())
+                LAZY_ANCHORED_REGEX
+                    .captures(m4tch.at(0).unwrap())
                     .unwrap()
                     .unwrap()
                     .at(1)
@@ -556,7 +557,8 @@ impl Matcher for RegexMatch {
                                  .i(capture.get(0).unwrap().start())
                                  .j(capture.get(0).unwrap().end() - 1)
                                  .regex_name(Some(name))
-                                 .regex_match(Some(capture.iter()
+                                 .regex_match(Some(capture
+                                                       .iter()
                                                        .map(|x| {
                                                                 x.unwrap().as_str().to_string()
                                                             })
@@ -691,8 +693,13 @@ impl Matcher for DateMatch {
             }
         }
 
-        matches.iter()
-            .filter(|&x| !matches.iter().any(|y| *x != *y && y.i <= x.i && y.j >= x.j))
+        matches
+            .iter()
+            .filter(|&x| {
+                        !matches
+                             .iter()
+                             .any(|y| *x != *y && y.i <= x.i && y.j >= x.j)
+                    })
             .cloned()
             .collect()
     }
@@ -822,7 +829,9 @@ mod tests {
 
     #[test]
     fn test_translate() {
-        let chr_map = vec![('a', 'A'), ('b', 'B')].into_iter().collect::<HashMap<char, char>>();
+        let chr_map = vec![('a', 'A'), ('b', 'B')]
+            .into_iter()
+            .collect::<HashMap<char, char>>();
         let test_data = [("a", chr_map.clone(), "A"),
                          ("c", chr_map.clone(), "c"),
                          ("ab", chr_map.clone(), "AB"),
@@ -843,7 +852,7 @@ mod tests {
         let patterns = ["mother", "motherboard", "board"];
         let ijs = [(0, 5), (0, 10), (6, 10)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -858,7 +867,7 @@ mod tests {
         let patterns = ["1abcdef", "abcdef12"];
         let ijs = [(0, 6), (1, 8)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -873,7 +882,7 @@ mod tests {
         let patterns = ["BoaRd"];
         let ijs = [(0, 4)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -888,7 +897,7 @@ mod tests {
         let patterns = ["asdf", "asdf1234"];
         let ijs = [(0, 3), (0, 7)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -899,13 +908,15 @@ mod tests {
 
     #[test]
     fn test_dictionary_matches_user_inputs() {
-        let user_inputs =
-            [("bejeebus".to_string(), 1)].into_iter().cloned().collect::<HashMap<String, usize>>();
+        let user_inputs = [("bejeebus".to_string(), 1)]
+            .into_iter()
+            .cloned()
+            .collect::<HashMap<String, usize>>();
         let matches = (matching::DictionaryMatch {}).get_matches("bejeebus", &Some(user_inputs));
         let patterns = ["bejeebus"];
         let ijs = [(0, 7)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -921,7 +932,7 @@ mod tests {
         let patterns = ["rehtom"];
         let ijs = [(0, 5)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -957,7 +968,9 @@ mod tests {
                              (vec![('a', vec!['@', '4'])].into_iter().collect(),
                               vec![vec![('@', 'a')].into_iter().collect(),
                                    vec![('4', 'a')].into_iter().collect()]),
-                             (vec![('a', vec!['@', '4']), ('c', vec!['('])].into_iter().collect(),
+                             (vec![('a', vec!['@', '4']), ('c', vec!['('])]
+                                  .into_iter()
+                                  .collect(),
                               vec![vec![('@', 'a'), ('(', 'c')].into_iter().collect(),
                                    vec![('4', 'a'), ('(', 'c')].into_iter().collect()])];
         for (table, subs) in test_data {
@@ -971,7 +984,7 @@ mod tests {
         let patterns = ["m0th3r"];
         let ijs = [(0, 5)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -987,7 +1000,7 @@ mod tests {
         let patterns = ["p@ss", "@ssw0rd"];
         let ijs = [(0, 3), (1, 7)];
         for (k, &pattern) in patterns.iter().enumerate() {
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             let pattern_name = "dictionary";
             let (i, j) = ijs[k];
             assert_eq!(m.pattern, pattern_name);
@@ -1013,7 +1026,7 @@ mod tests {
     fn test_doesnt_match_1_and_2_char_spatial_patterns() {
         for password in &["", "/", "qw", "*/"] {
             let result = (matching::SpatialMatch {}).get_matches(password, &None);
-            assert!(!result.into_iter().any(|m| &m.token == password));
+            assert!(!result.into_iter().any(|m| m.token == *password));
         }
     }
 
@@ -1023,7 +1036,7 @@ mod tests {
         let result = (matching::SpatialMatch {})
             .get_matches(password, &None)
             .into_iter()
-            .find(|m| &m.token == password)
+            .find(|m| m.token == *password)
             .unwrap();
         assert_eq!(result.graph, Some("qwerty".to_string()));
         assert_eq!(result.turns, Some(2));
@@ -1048,8 +1061,9 @@ mod tests {
                              (";qoaOQ:Aoq;a", "dvorak", 11, 4)];
         for (password, keyboard, turns, shifts) in test_data {
             let matches = (matching::SpatialMatch {}).get_matches(password, &None);
-            let result = matches.into_iter()
-                .find(|m| &m.token == password && m.graph == Some(keyboard.to_string()))
+            let result = matches
+                .into_iter()
+                .find(|m| m.token == *password && m.graph == Some(keyboard.to_string()))
                 .unwrap();
             assert_eq!(result.turns, Some(turns));
             assert_eq!(result.shifted_count, Some(shifts));
@@ -1069,8 +1083,13 @@ mod tests {
         let password = "abcbabc";
         let matches = (matching::SequenceMatch {}).get_matches(password, &None);
         for &(pattern, i, j, ascending) in
-            &[("abc", 0, 2, true), ("cba", 2, 4, false), ("abc", 4, 6, true)] {
-            let m = matches.iter().find(|m| &m.token == pattern && m.i == i && m.j == j).unwrap();
+            &[("abc", 0, 2, true),
+              ("cba", 2, 4, false),
+              ("abc", 4, 6, true)] {
+            let m = matches
+                .iter()
+                .find(|m| m.token == *pattern && m.i == i && m.j == j)
+                .unwrap();
             assert_eq!(m.ascending, Some(ascending));
         }
     }
@@ -1101,7 +1120,7 @@ mod tests {
                          ("97531", "digits", false)];
         for &(pattern, name, is_ascending) in &test_data {
             let matches = (matching::SequenceMatch {}).get_matches(pattern, &None);
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             assert_eq!(m.sequence_name, Some(name));
             assert_eq!(m.ascending, Some(is_ascending));
             assert_eq!(m.i, 0);
@@ -1134,7 +1153,10 @@ mod tests {
             for &chr in &['a', 'Z', '4', '&'] {
                 let password = (0..len).map(|_| chr).collect::<String>();
                 let matches = (matching::RepeatMatch {}).get_matches(&password, &None);
-                let m = matches.iter().find(|m| m.base_token == Some(format!("{}", chr))).unwrap();
+                let m = matches
+                    .iter()
+                    .find(|m| m.base_token == Some(format!("{}", chr)))
+                    .unwrap();
                 assert_eq!(m.i, 0);
                 assert_eq!(m.j, len - 1);
             }
@@ -1145,7 +1167,10 @@ mod tests {
     fn test_multiple_adjacent_repeats() {
         let password = "BBB1111aaaaa@@@@@@";
         let matches = (matching::RepeatMatch {}).get_matches(password, &None);
-        let test_data = [("BBB", 0, 2), ("1111", 3, 6), ("aaaaa", 7, 11), ("@@@@@@", 12, 17)];
+        let test_data = [("BBB", 0, 2),
+                         ("1111", 3, 6),
+                         ("aaaaa", 7, 11),
+                         ("@@@@@@", 12, 17)];
         for &(pattern, i, j) in &test_data {
             let m = matches.iter().find(|m| m.token == pattern).unwrap();
             assert_eq!(m.base_token, Some(pattern[0..1].to_string()));
@@ -1158,7 +1183,10 @@ mod tests {
     fn test_multiple_non_adjacent_repeats() {
         let password = "2818BBBbzsdf1111@*&@!aaaaaEUDA@@@@@@1729";
         let matches = (matching::RepeatMatch {}).get_matches(password, &None);
-        let test_data = [("BBB", 4, 6), ("1111", 12, 15), ("aaaaa", 21, 25), ("@@@@@@", 30, 35)];
+        let test_data = [("BBB", 4, 6),
+                         ("1111", 12, 15),
+                         ("aaaaa", 21, 25),
+                         ("@@@@@@", 30, 35)];
         for &(pattern, i, j) in &test_data {
             let m = matches.iter().find(|m| m.token == pattern).unwrap();
             assert_eq!(m.base_token, Some(pattern[0..1].to_string()));
@@ -1172,7 +1200,7 @@ mod tests {
         let password = "abab";
         let (i, j) = (0, 3);
         let matches = (matching::RepeatMatch {}).get_matches(password, &None);
-        let m = matches.iter().find(|m| &m.token == password).unwrap();
+        let m = matches.iter().find(|m| m.token == *password).unwrap();
         assert_eq!(m.base_token, Some("ab".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
@@ -1183,7 +1211,7 @@ mod tests {
         let password = "aabaab";
         let (i, j) = (0, 5);
         let matches = (matching::RepeatMatch {}).get_matches(password, &None);
-        let m = matches.iter().find(|m| &m.token == password).unwrap();
+        let m = matches.iter().find(|m| m.token == *password).unwrap();
         assert_eq!(m.base_token, Some("aab".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
@@ -1194,7 +1222,7 @@ mod tests {
         let password = "abababab";
         let (i, j) = (0, 7);
         let matches = (matching::RepeatMatch {}).get_matches(password, &None);
-        let m = matches.iter().find(|m| &m.token == password).unwrap();
+        let m = matches.iter().find(|m| m.token == *password).unwrap();
         assert_eq!(m.base_token, Some("ab".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
@@ -1205,7 +1233,7 @@ mod tests {
         let test_data = [("1922", "recent_year"), ("2017", "recent_year")];
         for &(pattern, name) in &test_data {
             let matches = (matching::RegexMatch {}).get_matches(pattern, &None);
-            let m = matches.iter().find(|m| &m.token == pattern).unwrap();
+            let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, pattern.len() - 1);
             assert_eq!(m.regex_name, Some(name));
@@ -1218,7 +1246,7 @@ mod tests {
         for sep in &separators {
             let password = format!("13{}2{}1921", sep, sep);
             let matches = (matching::DateMatch {}).get_matches(&password, &None);
-            let m = matches.iter().find(|m| &m.token == &password).unwrap();
+            let m = matches.iter().find(|m| m.token == password).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, password.len() - 1);
             assert_eq!(m.year, Some(1921));
@@ -1232,7 +1260,7 @@ mod tests {
     fn test_date_matches_year_closest_to_reference_year() {
         let password = format!("1115{}", time::now_utc().tm_year % 100);
         let matches = (matching::DateMatch {}).get_matches(&password, &None);
-        let m = matches.iter().find(|m| &m.token == &password).unwrap();
+        let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, password.len() - 1);
         assert_eq!(m.year, Some(time::now_utc().tm_year as i16 + 1900));
@@ -1247,7 +1275,7 @@ mod tests {
         for &(day, month, year) in &test_data {
             let password = format!("{}{}{}", year, month, day);
             let matches = (matching::DateMatch {}).get_matches(&password, &None);
-            let m = matches.iter().find(|m| &m.token == &password).unwrap();
+            let m = matches.iter().find(|m| m.token == password).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, password.len() - 1);
             assert_eq!(m.year, Some(year));
@@ -1256,7 +1284,7 @@ mod tests {
         for &(day, month, year) in &test_data {
             let password = format!("{}.{}.{}", year, month, day);
             let matches = (matching::DateMatch {}).get_matches(&password, &None);
-            let m = matches.iter().find(|m| &m.token == &password).unwrap();
+            let m = matches.iter().find(|m| m.token == password).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, password.len() - 1);
             assert_eq!(m.year, Some(year));
@@ -1268,7 +1296,7 @@ mod tests {
     fn test_matching_zero_padded_dates() {
         let password = "02/02/02";
         let matches = (matching::DateMatch {}).get_matches(password, &None);
-        let m = matches.iter().find(|m| &m.token == &password).unwrap();
+        let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, password.len() - 1);
         assert_eq!(m.year, Some(2002));
@@ -1294,14 +1322,20 @@ mod tests {
     fn test_matching_overlapping_dates() {
         let password = "12/20/1991.12.20";
         let matches = (matching::DateMatch {}).get_matches(password, &None);
-        let m = matches.iter().find(|m| &m.token == "12/20/1991").unwrap();
+        let m = matches
+            .iter()
+            .find(|m| &m.token == "12/20/1991")
+            .unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, 9);
         assert_eq!(m.year, Some(1991));
         assert_eq!(m.month, Some(12));
         assert_eq!(m.day, Some(20));
         assert_eq!(m.separator, Some("/".to_string()));
-        let m = matches.iter().find(|m| &m.token == "1991.12.20").unwrap();
+        let m = matches
+            .iter()
+            .find(|m| &m.token == "1991.12.20")
+            .unwrap();
         assert_eq!(m.i, 6);
         assert_eq!(m.j, password.len() - 1);
         assert_eq!(m.year, Some(1991));
@@ -1327,11 +1361,15 @@ mod tests {
     fn test_omnimatch() {
         assert_eq!(matching::omnimatch("", &None), Vec::new());
         let password = "r0sebudmaelstrom11/20/91aaaa";
-        let expected =
-            [("dictionary", 0, 6), ("dictionary", 7, 15), ("date", 16, 23), ("repeat", 24, 27)];
+        let expected = [("dictionary", 0, 6),
+                        ("dictionary", 7, 15),
+                        ("date", 16, 23),
+                        ("repeat", 24, 27)];
         let matches = matching::omnimatch(password, &None);
         for &(pattern_name, i, j) in &expected {
-            assert!(matches.iter().any(|m| m.pattern == pattern_name && m.i == i && m.j == j));
+            assert!(matches
+                        .iter()
+                        .any(|m| m.pattern == pattern_name && m.i == i && m.j == j));
         }
     }
 }
