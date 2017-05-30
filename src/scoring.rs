@@ -378,7 +378,7 @@ impl Estimator for SpatialEstimator {
                 if unshifted_count == 0 {
                     guesses *= 2;
                 } else {
-                    let shifted_variations = (1..(cmp::min(shifted_count, unshifted_count) + 1))
+                    let shifted_variations: u64 = (1..(cmp::min(shifted_count, unshifted_count) + 1))
                         .into_iter()
                         .map(|i| n_ck(shifted_count + unshifted_count, i))
                         .sum();
