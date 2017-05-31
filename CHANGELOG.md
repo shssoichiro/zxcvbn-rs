@@ -1,3 +1,8 @@
+**Version 0.5.0**
+ - Fix for a BC-breaking change in nightly Rust (https://github.com/shssoichiro/zxcvbn-rs/pull/8)
+ - Upgrade `serde` to 1.0
+ - Silence a warning from `derive_builder`
+
 **Version 0.4.4**
  - Upgrade `itertools` to 0.6
 

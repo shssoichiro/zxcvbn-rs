@@ -6,7 +6,7 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "0.4.4"
+version = "0.5.0"
 
 [dependencies]
 fancy-regex = "0.1.0"
