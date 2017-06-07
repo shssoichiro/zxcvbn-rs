@@ -336,17 +336,17 @@ fn n_ck(n: usize, k: usize) -> u64 {
     (if k > n {
          0
      } else if k == 0 {
-        1
-    } else {
-        let mut r: usize = 1;
-        let mut n = n;
-        for d in 1..(k + 1) {
-            r = r.saturating_mul(n);
-            r /= d;
-            n -= 1;
-        }
-        r
-    }) as u64
+         1
+     } else {
+         let mut r: usize = 1;
+         let mut n = n;
+         for d in 1..(k + 1) {
+             r = r.saturating_mul(n);
+             r /= d;
+             n -= 1;
+         }
+         r
+     }) as u64
 }
 
 struct SpatialEstimator {}
@@ -354,8 +354,8 @@ struct SpatialEstimator {}
 impl Estimator for SpatialEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         #[allow(clone_on_copy)]
-        let (starts, degree) = if
-            ["qwerty", "dvorak"].contains(&m.graph.as_ref().unwrap().as_str()) {
+        let (starts, degree) = if ["qwerty", "dvorak"]
+               .contains(&m.graph.as_ref().unwrap().as_str()) {
             (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
         } else {
             (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
@@ -378,10 +378,11 @@ impl Estimator for SpatialEstimator {
                 if unshifted_count == 0 {
                     guesses *= 2;
                 } else {
-                    let shifted_variations: u64 = (1..(cmp::min(shifted_count, unshifted_count) + 1))
-                        .into_iter()
-                        .map(|i| n_ck(shifted_count + unshifted_count, i))
-                        .sum();
+                    let shifted_variations: u64 = (1..
+                                                   (cmp::min(shifted_count, unshifted_count) + 1))
+                            .into_iter()
+                            .map(|i| n_ck(shifted_count + unshifted_count, i))
+                            .sum();
                     guesses *= shifted_variations;
                 }
             }
@@ -442,16 +443,12 @@ struct RegexEstimator {}
 
 impl Estimator for RegexEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
-        if CHAR_CLASS_BASES
-               .keys()
-               .any(|x| x == &m.regex_name.unwrap()) {
+        if CHAR_CLASS_BASES.keys().any(|x| x == &m.regex_name.unwrap()) {
             CHAR_CLASS_BASES[m.regex_name.unwrap()].pow(m.token.len() as u32)
         } else {
             match m.regex_name {
                 Some("recent_year") => {
-                    let year_space = (m.regex_match.as_ref().unwrap()[0]
-                                          .parse::<i16>()
-                                          .unwrap() -
+                    let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap() -
                                       *REFERENCE_YEAR)
                             .abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
@@ -701,10 +698,7 @@ mod tests {
 
     #[test]
     fn test_calc_guesses_returns_guesses_when_cached() {
-        let mut m = MatchBuilder::default()
-            .guesses(Some(1))
-            .build()
-            .unwrap();
+        let mut m = MatchBuilder::default().guesses(Some(1)).build().unwrap();
         assert_eq!(scoring::estimate_guesses(&mut m, ""), 1);
     }
 
@@ -732,7 +726,8 @@ mod tests {
         for &(token, base_token, repeat_count) in &test_data {
             let base_guesses =
                 scoring::most_guessable_match_sequence(base_token,
-                                                       &::matching::omnimatch(base_token, &None),
+                                                       &::matching::omnimatch(base_token,
+                                                                              &HashMap::new()),
                                                        false)
                         .guesses;
             let mut m = MatchBuilder::default()

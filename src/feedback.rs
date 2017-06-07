@@ -55,8 +55,8 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
                 warning: Some(if base_token.len() == 1 {
                                   "Repeats like \"aaa\" are easy to guess."
                               } else {
-                                  "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
-                              }),
+                    "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
+                }),
                 suggestions: vec!["Avoid repeated words and characters."],
             }
         }
@@ -95,10 +95,10 @@ fn get_dictionary_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feed
                      if rank <= 10 {
                          "This is a top-10 common password."
                      } else if rank <= 100 {
-                    "This is a top-100 common password."
-                } else {
-                    "This is a very common password."
-                }
+                         "This is a top-100 common password."
+                     } else {
+                         "This is a very common password."
+                     }
                  } else {
                      "This is similar to a commonly used password."
                  })

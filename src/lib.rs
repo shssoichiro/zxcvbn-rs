@@ -75,7 +75,7 @@ pub struct Entropy {
 /// to be safe, if they are of a reasonable length (8+ chars), so you should handle them as
 /// strong passwords, but this library is not able to generate entropy information for them
 /// at this time.
-pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
+pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Option<Entropy> {
     if password.is_empty() {
         return None;
     }
@@ -94,12 +94,11 @@ pub fn zxcvbn(password: &str, user_inputs: Option<&[&str]>) -> Option<Entropy> {
         password
     };
 
-    let sanitized_inputs = user_inputs.map(|x| {
-                                               x.iter()
-                                                   .enumerate()
-                                                   .map(|(i, x)| (x.to_lowercase(), i + 1))
-                                                   .collect()
-                                           });
+    let sanitized_inputs = user_inputs
+        .iter()
+        .enumerate()
+        .map(|(i, x)| (x.to_lowercase(), i + 1))
+        .collect();
 
     let matches = matching::omnimatch(password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(password, &matches, false);
@@ -126,13 +125,9 @@ mod tests {
     use quickcheck::TestResult;
 
     quickcheck! {
-        fn test_zxcvbn_doesnt_panic(password: String, user_inputs: Option<Vec<String>>) -> TestResult {
-            if let Some(user_inputs) = user_inputs {
-                let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
-                zxcvbn(&password, Some(&inputs));
-            } else {
-                zxcvbn(&password, None);
-            }
+        fn test_zxcvbn_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
+            let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
+            zxcvbn(&password, &inputs);
             TestResult::from_bool(true)
         }
     }
@@ -140,7 +135,7 @@ mod tests {
     #[test]
     fn test_zxcvbn() {
         let password = "r0sebudmaelstrom11/20/91aaaa";
-        let entropy = zxcvbn(password, None).unwrap();
+        let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 103000000);
         assert_eq!(entropy.guesses_log10, 8);
         assert_eq!(entropy.score, 3);
