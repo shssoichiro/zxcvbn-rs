@@ -12,6 +12,7 @@ version = "0.5.0"
 fancy-regex = "0.1.0"
 itertools = "0.6.0"
 lazy_static = "0.2.2"
+quick-error = "1.2.0"
 regex = "0.2.0"
 time = "0.1.35"
 
@@ -20,14 +21,14 @@ optional = true
 version = ">=0.0.100"
 
 [dependencies.derive_builder]
-version = "0.4.7"
 features = ["struct_default", "private_fields"]
+version = "0.4.7"
 
-[dependencies.serde_derive]
+[dependencies.serde]
 optional = true
 version = "1.0.0"
 
-[dependencies.serde]
+[dependencies.serde_derive]
 optional = true
 version = "1.0.0"
 

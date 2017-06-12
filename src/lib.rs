@@ -21,13 +21,15 @@ extern crate fancy_regex;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
+extern crate quick_error;
 extern crate regex;
-extern crate time;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
 #[cfg(feature = "ser")]
 extern crate serde;
+extern crate time;
 
 #[cfg(test)]
 #[macro_use]
@@ -67,6 +69,21 @@ pub struct Entropy {
     pub calc_time: u64,
 }
 
+quick_error! {
+    #[derive(Debug, Clone, Copy)]
+    /// Potential errors that may be returned from `zxcvbn`
+    pub enum ZxcvbnError {
+        /// Indicates that a blank password was passed in to `zxcvbn`
+        BlankPassword {
+            description("Zxcvbn cannot evaluate a blank password")
+        }
+        /// Indicates that the password contained non-ASCII characters
+        NonAsciiPassword {
+            description("Zxcvbn can only evaluate ASCII passwords; this feature may be added in the future")
+        }
+    }
+}
+
 /// Takes a password string and optionally a list of user-supplied inputs
 /// (e.g. username, email, first name) and calculates the strength of the password
 /// based on entropy, using a number of different factors.
@@ -75,13 +92,13 @@ pub struct Entropy {
 /// to be safe, if they are of a reasonable length (8+ chars), so you should handle them as
 /// strong passwords, but this library is not able to generate entropy information for them
 /// at this time.
-pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Option<Entropy> {
+pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnError> {
     if password.is_empty() {
-        return None;
+        return Err(ZxcvbnError::BlankPassword);
     }
 
     if !password.is_ascii() {
-        return None;
+        return Err(ZxcvbnError::NonAsciiPassword);
     }
 
     let start_time_ns = time::precise_time_ns();
@@ -107,16 +124,16 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Option<Entropy> {
         time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &matches);
 
-    Some(Entropy {
-             guesses: result.guesses,
-             guesses_log10: result.guesses_log10,
-             crack_times_seconds: attack_times,
-             crack_times_display: attack_times_display,
-             score: score,
-             feedback: feedback,
-             sequence: result.sequence,
-             calc_time: calc_time,
-         })
+    Ok(Entropy {
+           guesses: result.guesses,
+           guesses_log10: result.guesses_log10,
+           crack_times_seconds: attack_times,
+           crack_times_display: attack_times_display,
+           score: score,
+           feedback: feedback,
+           sequence: result.sequence,
+           calc_time: calc_time,
+       })
 }
 
 #[cfg(test)]
@@ -127,7 +144,7 @@ mod tests {
     quickcheck! {
         fn test_zxcvbn_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
             let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
-            zxcvbn(&password, &inputs);
+            zxcvbn(&password, &inputs).ok();
             TestResult::from_bool(true)
         }
     }
