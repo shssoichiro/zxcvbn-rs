@@ -1,6 +1,6 @@
 **Version 0.6.0**
  - [SEMVER_MAJOR] Change the signature for `zxcvbn` to take `&[]` instead of `Option<&[]>` for `user_inputs` (https://github.com/shssoichiro/zxcvbn-rs/issues/9)
- - [SEMVER_MAJOR] Change the signature for `zxcvbn` to return `Result<Entropy, ZxcvbnError>` instead of `Option<Entropy>`
+ - [SEMVER_MAJOR] Change the signature for `zxcvbn` to return `Result<Entropy, ZxcvbnError>` instead of `Option<Entropy>` (https://github.com/shssoichiro/zxcvbn-rs/issues/11)
 
 **Version 0.5.0**
  - Fix for a BC-breaking change in nightly Rust (https://github.com/shssoichiro/zxcvbn-rs/pull/8)
