@@ -19,10 +19,12 @@ pub fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
     if sequence.is_empty() {
         // default feedback
         return Some(Feedback {
-                        warning: None,
-                        suggestions: vec!["Use a few words, avoid common phrases.",
-                                          "No need for symbols, digits, or uppercase letters."],
-                    });
+            warning: None,
+            suggestions: vec![
+                "Use a few words, avoid common phrases.",
+                "No need for symbols, digits, or uppercase letters.",
+            ],
+        });
     }
     if score >= 3 {
         return None;
@@ -42,10 +44,10 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
         "spatial" => {
             Feedback {
                 warning: Some(if cur_match.turns == Some(1) {
-                                  "Straight rows of keys are easy to guess."
-                              } else {
-                                  "Short keyboard patterns are easy to guess."
-                              }),
+                    "Straight rows of keys are easy to guess."
+                } else {
+                    "Short keyboard patterns are easy to guess."
+                }),
                 suggestions: vec!["Use a longer keyboard pattern with more turns."],
             }
         }
@@ -53,8 +55,8 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
             let base_token = cur_match.base_token.as_ref().unwrap();
             Feedback {
                 warning: Some(if base_token.len() == 1 {
-                                  "Repeats like \"aaa\" are easy to guess."
-                              } else {
+                    "Repeats like \"aaa\" are easy to guess."
+                } else {
                     "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
                 }),
                 suggestions: vec!["Avoid repeated words and characters."],
@@ -70,8 +72,10 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
             if cur_match.regex_name == Some("recent_year") {
                 Feedback {
                     warning: Some("Recent years are easy to guess."),
-                    suggestions: vec!["Avoid recent years.",
-                                      "Avoid years that are associated with you."],
+                    suggestions: vec![
+                        "Avoid recent years.",
+                        "Avoid years that are associated with you.",
+                    ],
                 }
             } else {
                 Feedback::default()
@@ -91,17 +95,17 @@ fn get_dictionary_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feed
     let warning = match cur_match.dictionary_name {
         Some("passwords") => {
             Some(if is_sole_match && !cur_match.l33t && !cur_match.reversed {
-                     let rank = cur_match.rank.unwrap();
-                     if rank <= 10 {
-                         "This is a top-10 common password."
-                     } else if rank <= 100 {
-                         "This is a top-100 common password."
-                     } else {
-                         "This is a very common password."
-                     }
-                 } else {
-                     "This is similar to a commonly used password."
-                 })
+                let rank = cur_match.rank.unwrap();
+                if rank <= 10 {
+                    "This is a top-10 common password."
+                } else if rank <= 100 {
+                    "This is a top-100 common password."
+                } else {
+                    "This is a very common password."
+                }
+            } else {
+                "This is similar to a commonly used password."
+            })
         }
         Some("english") => {
             if is_sole_match {
@@ -114,10 +118,10 @@ fn get_dictionary_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feed
         Some("female_names") |
         Some("male_names") => {
             Some(if is_sole_match {
-                     "Names and surnames by themselves are easy to guess."
-                 } else {
-                     "Common names and surnames are easy to guess."
-                 })
+                "Names and surnames by themselves are easy to guess."
+            } else {
+                "Common names and surnames are easy to guess."
+            })
         }
         _ => None,
     };
@@ -138,7 +142,9 @@ fn get_dictionary_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feed
         suggestions.push("Reversed words aren't much harder to guess.");
     }
     if cur_match.l33t {
-        suggestions.push("Predictable substitutions like '@' instead of 'a' don't help very much.");
+        suggestions.push(
+            "Predictable substitutions like '@' instead of 'a' don't help very much.",
+        );
     }
 
     Feedback {

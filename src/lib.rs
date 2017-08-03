@@ -125,15 +125,15 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
     let feedback = feedback::get_feedback(score, &matches);
 
     Ok(Entropy {
-           guesses: result.guesses,
-           guesses_log10: result.guesses_log10,
-           crack_times_seconds: attack_times,
-           crack_times_display: attack_times_display,
-           score: score,
-           feedback: feedback,
-           sequence: result.sequence,
-           calc_time: calc_time,
-       })
+        guesses: result.guesses,
+        guesses_log10: result.guesses_log10,
+        crack_times_seconds: attack_times,
+        crack_times_display: attack_times_display,
+        score: score,
+        feedback: feedback,
+        sequence: result.sequence,
+        calc_time: calc_time,
+    })
 }
 
 #[cfg(test)]
@@ -153,10 +153,17 @@ mod tests {
     fn test_zxcvbn() {
         let password = "r0sebudmaelstrom11/20/91aaaa";
         let entropy = zxcvbn(password, &[]).unwrap();
-        assert_eq!(entropy.guesses, 103000000);
-        assert_eq!(entropy.guesses_log10, 8);
-        assert_eq!(entropy.score, 3);
+        assert_eq!(entropy.guesses, 455972282752000);
+        assert_eq!(entropy.guesses_log10, 14);
+        assert_eq!(entropy.score, 4);
         assert!(!entropy.sequence.is_empty());
         assert!(entropy.feedback.is_none());
+    }
+
+    #[test]
+    fn test_issue_13() {
+        let password = "Imaginative-Say-Shoulder-Dish-0";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.score, 4);
     }
 }

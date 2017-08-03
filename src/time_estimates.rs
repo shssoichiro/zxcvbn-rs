@@ -51,16 +51,26 @@ pub fn estimate_attack_times(guesses: u64) -> (CrackTimes, CrackTimesDisplay, u8
         offline_fast_hashing_1e10_per_second: guesses / 10_000_000_000,
     };
     let crack_times_display = CrackTimesDisplay {
-        online_throttling_100_per_hour:
-            display_time(crack_times_seconds.online_throttling_100_per_hour),
-        online_no_throttling_10_per_second:
-            display_time(crack_times_seconds.online_no_throttling_10_per_second),
-        offline_slow_hashing_1e4_per_second:
-            display_time(crack_times_seconds.offline_slow_hashing_1e4_per_second),
-        offline_fast_hashing_1e10_per_second:
-            display_time(crack_times_seconds.offline_fast_hashing_1e10_per_second),
+        online_throttling_100_per_hour: display_time(
+            crack_times_seconds.online_throttling_100_per_hour,
+        ),
+        online_no_throttling_10_per_second: display_time(
+            crack_times_seconds.online_no_throttling_10_per_second,
+        ),
+        offline_slow_hashing_1e4_per_second: display_time(
+            crack_times_seconds
+                .offline_slow_hashing_1e4_per_second,
+        ),
+        offline_fast_hashing_1e10_per_second: display_time(
+            crack_times_seconds
+                .offline_fast_hashing_1e10_per_second,
+        ),
     };
-    (crack_times_seconds, crack_times_display, calculate_score(guesses))
+    (
+        crack_times_seconds,
+        crack_times_display,
+        calculate_score(guesses),
+    )
 }
 
 fn display_time(seconds: u64) -> String {

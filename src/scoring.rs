@@ -39,10 +39,11 @@ const MIN_SUBMATCH_GUESSES_SINGLE_CHAR: u64 = 10;
 const MIN_SUBMATCH_GUESSES_MULTI_CHAR: u64 = 50;
 
 #[doc(hidden)]
-pub fn most_guessable_match_sequence(password: &str,
-                                     matches: &[::matching::Match],
-                                     exclude_additive: bool)
-                                     -> GuessCalculation {
+pub fn most_guessable_match_sequence(
+    password: &str,
+    matches: &[::matching::Match],
+    exclude_additive: bool,
+) -> GuessCalculation {
     let n = password.len();
 
     // partition matches into sublists according to ending index j
@@ -63,11 +64,13 @@ pub fn most_guessable_match_sequence(password: &str,
 
     /// helper: considers whether a length-l sequence ending at match m is better (fewer guesses)
     /// than previously encountered sequences, updating state if so.
-    fn update(mut m: Match,
-              len: usize,
-              password: &str,
-              optimal: &mut Optimal,
-              exclude_additive: bool) {
+    fn update(
+        mut m: Match,
+        len: usize,
+        password: &str,
+        optimal: &mut Optimal,
+        exclude_additive: bool,
+    ) {
         let k = m.j;
         let mut pi = estimate_guesses(&mut m, password);
         if len > 1 {
@@ -82,13 +85,11 @@ pub fn most_guessable_match_sequence(password: &str,
             let additive = if len == 1 {
                 1
             } else {
-                (2..len).fold(MIN_GUESSES_BEFORE_GROWING_SEQUENCE,
-                              |acc, _| acc.saturating_mul(MIN_GUESSES_BEFORE_GROWING_SEQUENCE))
+                (2..len).fold(MIN_GUESSES_BEFORE_GROWING_SEQUENCE, |acc, _| {
+                    acc.saturating_mul(MIN_GUESSES_BEFORE_GROWING_SEQUENCE)
+                })
             };
-            guesses = match guesses.checked_add(additive) {
-                Some(r) => r,
-                None => ::std::u64::MAX,
-            };
+            guesses = guesses.saturating_add(additive);
         }
         // update state if new best.
         // first see if any competing sequences covering this prefix, with l or fewer matches,
@@ -102,7 +103,7 @@ pub fn most_guessable_match_sequence(password: &str,
             }
         }
         // this sequence might be part of the final optimal sequence.
-        *optimal.g[k].entry(len).or_insert(0) = guesses as u64;
+        *optimal.g[k].entry(len).or_insert(0) = guesses;
         *optimal.m[k].entry(len).or_insert_with(Match::default) = m;
         *optimal.pi[k].entry(len).or_insert(0) = pi;
     }
@@ -162,12 +163,11 @@ pub fn most_guessable_match_sequence(password: &str,
             let m = &optimal.m[k][&l.unwrap()];
             optimal_match_sequence.insert(0, m.clone());
             if m.i == 0 {
-                break;
+                return optimal_match_sequence;
             }
             k = m.i - 1;
             l = l.map(|x| x - 1);
         }
-        optimal_match_sequence
     }
 
     for (k, match_by_j) in matches_by_j.iter().enumerate() {
@@ -201,11 +201,7 @@ pub fn most_guessable_match_sequence(password: &str,
 }
 
 fn factorial(n: usize) -> usize {
-    // unoptimized, called only on small n
-    if n < 2 {
-        return 1;
-    }
-    (2..(n + 1)).fold(1, |acc, x| acc * x)
+    (1..(n + 1)).product()
 }
 
 fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
@@ -277,7 +273,7 @@ impl Estimator for DictionaryEstimator {
         m.uppercase_variations = Some(uppercase_variations(m));
         m.l33t_variations = Some(l33t_variations(m));
         m.base_guesses.unwrap() * m.uppercase_variations.unwrap() * m.l33t_variations.unwrap() *
-        if m.reversed { 2 } else { 1 }
+            if m.reversed { 2 } else { 1 }
     }
 }
 
@@ -290,9 +286,10 @@ fn uppercase_variations(m: &Match) -> u64 {
     // so it only doubles the search space (uncapitalized + capitalized).
     // allcaps and end-capitalized are common enough too, underestimate as 2x factor to be safe.
     if ((word.chars().next().unwrap().is_uppercase() ||
-         word.chars().last().unwrap().is_uppercase()) &&
-        word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
-       word.chars().all(char::is_uppercase) {
+             word.chars().last().unwrap().is_uppercase()) &&
+            word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
+        word.chars().all(char::is_uppercase)
+    {
         return 2;
     }
     // otherwise calculate the number of ways to capitalize U+L uppercase+lowercase letters
@@ -354,12 +351,12 @@ struct SpatialEstimator {}
 impl Estimator for SpatialEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         #[allow(clone_on_copy)]
-        let (starts, degree) = if ["qwerty", "dvorak"]
-               .contains(&m.graph.as_ref().unwrap().as_str()) {
-            (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
-        } else {
-            (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
-        };
+        let (starts, degree) =
+            if ["qwerty", "dvorak"].contains(&m.graph.as_ref().unwrap().as_str()) {
+                (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
+            } else {
+                (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
+            };
         let mut guesses = 0;
         let len = m.token.len();
         let turns = m.turns.unwrap();
@@ -378,8 +375,8 @@ impl Estimator for SpatialEstimator {
                 if unshifted_count == 0 {
                     guesses *= 2;
                 } else {
-                    let shifted_variations: u64 = (1..
-                                                   (cmp::min(shifted_count, unshifted_count) + 1))
+                    let shifted_variations: u64 =
+                        (1..(cmp::min(shifted_count, unshifted_count) + 1))
                             .into_iter()
                             .map(|i| n_ck(shifted_count + unshifted_count, i))
                             .sum();
@@ -449,8 +446,8 @@ impl Estimator for RegexEstimator {
             match m.regex_name {
                 Some("recent_year") => {
                     let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap() -
-                                      *REFERENCE_YEAR)
-                            .abs();
+                                          *REFERENCE_YEAR)
+                        .abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
                 }
                 _ => unreachable!(),
@@ -499,14 +496,16 @@ mod tests {
 
     #[test]
     fn test_n_ck() {
-        let test_data = [(0, 0, 1),
-                         (1, 0, 1),
-                         (5, 0, 1),
-                         (0, 1, 0),
-                         (0, 5, 0),
-                         (2, 1, 2),
-                         (4, 2, 6),
-                         (33, 7, 4272048)];
+        let test_data = [
+            (0, 0, 1),
+            (1, 0, 1),
+            (5, 0, 1),
+            (0, 1, 0),
+            (0, 5, 0),
+            (2, 1, 2),
+            (4, 2, 6),
+            (33, 7, 4272048),
+        ];
         for &(n, k, result) in &test_data {
             assert_eq!(scoring::n_ck(n, k), result);
         }
@@ -660,9 +659,11 @@ mod tests {
             .build()
             .unwrap();
 
-        let result = scoring::most_guessable_match_sequence(password,
-                                                            &[m0.clone(), m1.clone(), m2.clone()],
-                                                            true);
+        let result = scoring::most_guessable_match_sequence(
+            password,
+            &[m0.clone(), m1.clone(), m2.clone()],
+            true,
+        );
         assert_eq!(result.guesses, 3);
         assert_eq!(result.sequence, vec![m0]);
     }
@@ -689,9 +690,11 @@ mod tests {
             .build()
             .unwrap();
 
-        let result = scoring::most_guessable_match_sequence(password,
-                                                            &[m0.clone(), m1.clone(), m2.clone()],
-                                                            true);
+        let result = scoring::most_guessable_match_sequence(
+            password,
+            &[m0.clone(), m1.clone(), m2.clone()],
+            true,
+        );
         assert_eq!(result.guesses, 4);
         assert_eq!(result.sequence, vec![m1, m2]);
     }
@@ -712,24 +715,31 @@ mod tests {
             .day(Some(14))
             .build()
             .unwrap();
-        assert_eq!(scoring::estimate_guesses(&mut m, "1977"),
-                   (scoring::DateEstimator {}).estimate(&mut m));
+        assert_eq!(
+            scoring::estimate_guesses(&mut m, "1977"),
+            (scoring::DateEstimator {}).estimate(&mut m)
+        );
     }
 
     #[test]
     fn test_repeat_guesses() {
-        let test_data = [("aa", "a", 2),
-                         ("999", "9", 3),
-                         ("$$$$", "$", 4),
-                         ("abab", "ab", 2),
-                         ("batterystaplebatterystaplebatterystaple", "batterystaple", 3)];
+        let test_data = [
+            ("aa", "a", 2),
+            ("999", "9", 3),
+            ("$$$$", "$", 4),
+            ("abab", "ab", 2),
+            (
+                "batterystaplebatterystaplebatterystaple",
+                "batterystaple",
+                3,
+            ),
+        ];
         for &(token, base_token, repeat_count) in &test_data {
-            let base_guesses =
-                scoring::most_guessable_match_sequence(base_token,
-                                                       &::matching::omnimatch(base_token,
-                                                                              &HashMap::new()),
-                                                       false)
-                        .guesses;
+            let base_guesses = scoring::most_guessable_match_sequence(
+                base_token,
+                &::matching::omnimatch(base_token, &HashMap::new()),
+                false,
+            ).guesses;
             let mut m = MatchBuilder::default()
                 .token(token.to_string())
                 .base_token(Some(base_token.to_string()))
@@ -738,18 +748,22 @@ mod tests {
                 .build()
                 .unwrap();
             let expected_guesses = base_guesses * repeat_count as u64;
-            assert_eq!((scoring::RepeatEstimator {}).estimate(&mut m),
-                       expected_guesses);
+            assert_eq!(
+                (scoring::RepeatEstimator {}).estimate(&mut m),
+                expected_guesses
+            );
         }
     }
 
     #[test]
     fn test_sequence_guesses() {
-        let test_data = [("ab", true, 4 * 2), // obvious start * len-2
-                         ("XYZ", true, 26 * 3), // base26 * len-3
-                         ("4567", true, 10 * 4), // base10 * len-4
-                         ("7654", false, 10 * 4 * 2), // base10 * len 4 * descending
-                         ("ZYX", false, 4 * 3 * 2) /* obvious start * len-3 * descending */];
+        let test_data = [
+            ("ab", true, 4 * 2), // obvious start * len-2
+            ("XYZ", true, 26 * 3), // base26 * len-3
+            ("4567", true, 10 * 4), // base10 * len-4
+            ("7654", false, 10 * 4 * 2), // base10 * len 4 * descending
+            ("ZYX", false, 4 * 3 * 2) /* obvious start * len-3 * descending */,
+        ];
         for &(token, ascending, guesses) in &test_data {
             let mut m = MatchBuilder::default()
                 .token(token.to_string())
@@ -790,8 +804,10 @@ mod tests {
             .regex_match(Some(vec!["1972".to_string()]))
             .build()
             .unwrap();
-        assert_eq!((scoring::RegexEstimator {}).estimate(&mut m),
-                   (*scoring::REFERENCE_YEAR - 1972).abs() as u64);
+        assert_eq!(
+            (scoring::RegexEstimator {}).estimate(&mut m),
+            (*scoring::REFERENCE_YEAR - 1972).abs() as u64
+        );
     }
 
     #[test]
@@ -802,8 +818,10 @@ mod tests {
             .regex_match(Some(vec!["2005".to_string()]))
             .build()
             .unwrap();
-        assert_eq!((scoring::RegexEstimator {}).estimate(&mut m),
-                   scoring::MIN_YEAR_SPACE as u64);
+        assert_eq!(
+            (scoring::RegexEstimator {}).estimate(&mut m),
+            scoring::MIN_YEAR_SPACE as u64
+        );
     }
 
     #[test]
@@ -816,8 +834,10 @@ mod tests {
             .day(Some(1))
             .build()
             .unwrap();
-        assert_eq!((scoring::DateEstimator {}).estimate(&mut m),
-                   365 * (*scoring::REFERENCE_YEAR - m.year.unwrap()).abs() as u64);
+        assert_eq!(
+            (scoring::DateEstimator {}).estimate(&mut m),
+            365 * (*scoring::REFERENCE_YEAR - m.year.unwrap()).abs() as u64
+        );
     }
 
     #[test]
@@ -830,12 +850,14 @@ mod tests {
             .day(Some(1))
             .build()
             .unwrap();
-        assert_eq!((scoring::DateEstimator {}).estimate(&mut m),
-                   365 * scoring::MIN_YEAR_SPACE as u64 * 4);
+        assert_eq!(
+            (scoring::DateEstimator {}).estimate(&mut m),
+            365 * scoring::MIN_YEAR_SPACE as u64 * 4
+        );
     }
 
     #[test]
-    #[allow(clone_on_copy)]
+    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
     fn test_spatial_guesses_no_turns_or_shifts() {
         let mut m = MatchBuilder::default()
             .token("zxcvbn".to_string())
@@ -845,14 +867,15 @@ mod tests {
             .build()
             .unwrap();
         let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS *
-                           *scoring::KEYBOARD_AVERAGE_DEGREE *
-                           (m.token.len() - 1);
-        assert_eq!((scoring::SpatialEstimator {}).estimate(&mut m),
-                   base_guesses as u64);
+            *scoring::KEYBOARD_AVERAGE_DEGREE * (m.token.len() - 1);
+        assert_eq!(
+            (scoring::SpatialEstimator {}).estimate(&mut m),
+            base_guesses as u64
+        );
     }
 
     #[test]
-    #[allow(clone_on_copy)]
+    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
     fn test_spatial_guesses_adds_for_shifted_keys() {
         let mut m = MatchBuilder::default()
             .token("ZxCvbn".to_string())
@@ -861,15 +884,18 @@ mod tests {
             .shifted_count(Some(2))
             .build()
             .unwrap();
-        let base_guesses =
-            (*scoring::KEYBOARD_STARTING_POSITIONS * *scoring::KEYBOARD_AVERAGE_DEGREE *
-             (m.token.len() - 1)) as u64 * (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
-        assert_eq!((scoring::SpatialEstimator {}).estimate(&mut m),
-                   base_guesses);
+        let base_guesses = (*scoring::KEYBOARD_STARTING_POSITIONS *
+                                *scoring::KEYBOARD_AVERAGE_DEGREE *
+                                (m.token.len() - 1)) as u64 *
+            (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
+        assert_eq!(
+            (scoring::SpatialEstimator {}).estimate(&mut m),
+            base_guesses
+        );
     }
 
     #[test]
-    #[allow(clone_on_copy)]
+    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
     fn test_spatial_guesses_doubles_when_all_shifted() {
         let mut m = MatchBuilder::default()
             .token("ZXCVBN".to_string())
@@ -879,14 +905,15 @@ mod tests {
             .build()
             .unwrap();
         let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS *
-                           *scoring::KEYBOARD_AVERAGE_DEGREE *
-                           (m.token.len() - 1) * 2;
-        assert_eq!((scoring::SpatialEstimator {}).estimate(&mut m),
-                   base_guesses as u64);
+            *scoring::KEYBOARD_AVERAGE_DEGREE * (m.token.len() - 1) * 2;
+        assert_eq!(
+            (scoring::SpatialEstimator {}).estimate(&mut m),
+            base_guesses as u64
+        );
     }
 
     #[test]
-    #[allow(clone_on_copy)]
+    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
     fn test_spatial_guesses_accounts_for_turn_positions_directions_and_start_keys() {
         let mut m = MatchBuilder::default()
             .token("zxcft6yh".to_string())
@@ -899,11 +926,11 @@ mod tests {
             .map(|i| {
                 (1..::std::cmp::min(m.turns.unwrap() + 1, i))
                     .map(|j| {
-                             scoring::n_ck(i - 1, j - 1) *
-                             (*scoring::KEYBOARD_STARTING_POSITIONS *
-                              scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
-                             u64
-                         })
+                        scoring::n_ck(i - 1, j - 1) *
+                            (*scoring::KEYBOARD_STARTING_POSITIONS *
+                                 scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
+                                u64
+                    })
                     .sum::<u64>()
             })
             .sum::<u64>();
@@ -927,8 +954,10 @@ mod tests {
             .rank(Some(32))
             .build()
             .unwrap();
-        assert_eq!((scoring::DictionaryEstimator {}).estimate(&mut m),
-                   32 * scoring::uppercase_variations(&m));
+        assert_eq!(
+            (scoring::DictionaryEstimator {}).estimate(&mut m),
+            32 * scoring::uppercase_variations(&m)
+        );
     }
 
     #[test]
@@ -974,89 +1003,123 @@ mod tests {
 
     #[test]
     fn test_uppercase_variations() {
-        let test_data = [("", 1),
-                         ("a", 1),
-                         ("A", 2),
-                         ("abcdef", 1),
-                         ("Abcdef", 2),
-                         ("abcdeF", 2),
-                         ("ABCDEF", 2),
-                         ("aBcdef", scoring::n_ck(6, 1)),
-                         ("aBcDef", scoring::n_ck(6, 1) + scoring::n_ck(6, 2)),
-                         ("ABCDEf", scoring::n_ck(6, 1)),
-                         ("aBCDEf", scoring::n_ck(6, 1) + scoring::n_ck(6, 2)),
-                         ("ABCdef",
-                          scoring::n_ck(6, 1) + scoring::n_ck(6, 2) + scoring::n_ck(6, 3))];
+        let test_data = [
+            ("", 1),
+            ("a", 1),
+            ("A", 2),
+            ("abcdef", 1),
+            ("Abcdef", 2),
+            ("abcdeF", 2),
+            ("ABCDEF", 2),
+            ("aBcdef", scoring::n_ck(6, 1)),
+            ("aBcDef", scoring::n_ck(6, 1) + scoring::n_ck(6, 2)),
+            ("ABCDEf", scoring::n_ck(6, 1)),
+            ("aBCDEf", scoring::n_ck(6, 1) + scoring::n_ck(6, 2)),
+            (
+                "ABCdef",
+                scoring::n_ck(6, 1) + scoring::n_ck(6, 2) + scoring::n_ck(6, 3),
+            ),
+        ];
         for &(word, variants) in &test_data {
-            assert_eq!(scoring::uppercase_variations(&MatchBuilder::default()
-                                                          .token(word.to_string())
-                                                          .build()
-                                                          .unwrap()),
-                       variants);
+            assert_eq!(
+                scoring::uppercase_variations(&MatchBuilder::default()
+                    .token(word.to_string())
+                    .build()
+                    .unwrap()),
+                variants
+            );
         }
     }
 
     #[test]
     fn test_l33t_variations_for_non_l33t() {
-        assert_eq!(scoring::l33t_variations(&MatchBuilder::default().l33t(false).build().unwrap()),
-                   1);
+        assert_eq!(
+            scoring::l33t_variations(&MatchBuilder::default().l33t(false).build().unwrap()),
+            1
+        );
     }
 
     #[test]
     fn test_l33t_variations() {
-        let test_data = [("", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
-                         ("a", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
-                         ("4",
-                          2,
-                          vec![('4', 'a')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("4pple",
-                          2,
-                          vec![('4', 'a')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("abcet", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
-                         ("4bcet",
-                          2,
-                          vec![('4', 'a')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("a8cet",
-                          2,
-                          vec![('8', 'b')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("abce+",
-                          2,
-                          vec![('+', 't')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("48cet",
-                          4,
-                          vec![('4', 'a'), ('8', 'b')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("a4a4aa",
-                          scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
-                          vec![('4', 'a')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("4a4a44",
-                          scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
-                          vec![('4', 'a')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("Aa44aA",
-                          scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
-                          vec![('4', 'a')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>()),
-                         ("a44att+",
-                          (scoring::n_ck(4, 2) + scoring::n_ck(4, 1)) * scoring::n_ck(3, 1),
-                          vec![('4', 'a'), ('+', 't')]
-                              .into_iter()
-                              .collect::<HashMap<char, char>>())];
+        let test_data = [
+            ("", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
+            ("a", 1, vec![].into_iter().collect::<HashMap<char, char>>()),
+            (
+                "4",
+                2,
+                vec![('4', 'a')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "4pple",
+                2,
+                vec![('4', 'a')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "abcet",
+                1,
+                vec![].into_iter().collect::<HashMap<char, char>>(),
+            ),
+            (
+                "4bcet",
+                2,
+                vec![('4', 'a')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "a8cet",
+                2,
+                vec![('8', 'b')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "abce+",
+                2,
+                vec![('+', 't')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "48cet",
+                4,
+                vec![('4', 'a'), ('8', 'b')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "a4a4aa",
+                scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
+                vec![('4', 'a')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "4a4a44",
+                scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
+                vec![('4', 'a')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "Aa44aA",
+                scoring::n_ck(6, 2) + scoring::n_ck(6, 1),
+                vec![('4', 'a')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+            (
+                "a44att+",
+                (scoring::n_ck(4, 2) + scoring::n_ck(4, 1)) * scoring::n_ck(3, 1),
+                vec![('4', 'a'), ('+', 't')]
+                    .into_iter()
+                    .collect::<HashMap<char, char>>(),
+            ),
+        ];
         for &(word, variants, ref sub) in &test_data {
             let m = MatchBuilder::default()
                 .token(word.to_string())
