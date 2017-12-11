@@ -272,8 +272,8 @@ impl Estimator for DictionaryEstimator {
         m.base_guesses = m.rank.map(|x| x as u64);
         m.uppercase_variations = Some(uppercase_variations(m));
         m.l33t_variations = Some(l33t_variations(m));
-        m.base_guesses.unwrap() * m.uppercase_variations.unwrap() * m.l33t_variations.unwrap() *
-            if m.reversed { 2 } else { 1 }
+        m.base_guesses.unwrap() * m.uppercase_variations.unwrap() * m.l33t_variations.unwrap()
+            * if m.reversed { 2 } else { 1 }
     }
 }
 
@@ -285,10 +285,9 @@ fn uppercase_variations(m: &Match) -> u64 {
     // a capitalized word is the most common capitalization scheme,
     // so it only doubles the search space (uncapitalized + capitalized).
     // allcaps and end-capitalized are common enough too, underestimate as 2x factor to be safe.
-    if ((word.chars().next().unwrap().is_uppercase() ||
-             word.chars().last().unwrap().is_uppercase()) &&
-            word.chars().filter(|&c| c.is_uppercase()).count() == 1) ||
-        word.chars().all(char::is_uppercase)
+    if ((word.chars().next().unwrap().is_uppercase() || word.chars().last().unwrap().is_uppercase())
+        && word.chars().filter(|&c| c.is_uppercase()).count() == 1)
+        || word.chars().all(char::is_uppercase)
     {
         return 2;
     }
@@ -331,19 +330,19 @@ fn l33t_variations(m: &Match) -> u64 {
 fn n_ck(n: usize, k: usize) -> u64 {
     // http://blog.plover.com/math/choose.html
     (if k > n {
-         0
-     } else if k == 0 {
-         1
-     } else {
-         let mut r: usize = 1;
-         let mut n = n;
-         for d in 1..(k + 1) {
-             r = r.saturating_mul(n);
-             r /= d;
-             n -= 1;
-         }
-         r
-     }) as u64
+        0
+    } else if k == 0 {
+        1
+    } else {
+        let mut r: usize = 1;
+        let mut n = n;
+        for d in 1..(k + 1) {
+            r = r.saturating_mul(n);
+            r /= d;
+            n -= 1;
+        }
+        r
+    }) as u64
 }
 
 struct SpatialEstimator {}
@@ -351,12 +350,12 @@ struct SpatialEstimator {}
 impl Estimator for SpatialEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         #[allow(clone_on_copy)]
-        let (starts, degree) =
-            if ["qwerty", "dvorak"].contains(&m.graph.as_ref().unwrap().as_str()) {
-                (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
-            } else {
-                (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
-            };
+        let (starts, degree) = if ["qwerty", "dvorak"].contains(&m.graph.as_ref().unwrap().as_str())
+        {
+            (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
+        } else {
+            (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
+        };
         let mut guesses = 0;
         let len = m.token.len();
         let turns = m.turns.unwrap();
@@ -375,11 +374,11 @@ impl Estimator for SpatialEstimator {
                 if unshifted_count == 0 {
                     guesses *= 2;
                 } else {
-                    let shifted_variations: u64 =
-                        (1..(cmp::min(shifted_count, unshifted_count) + 1))
-                            .into_iter()
-                            .map(|i| n_ck(shifted_count + unshifted_count, i))
-                            .sum();
+                    let shifted_variations: u64 = (1
+                        ..(cmp::min(shifted_count, unshifted_count) + 1))
+                        .into_iter()
+                        .map(|i| n_ck(shifted_count + unshifted_count, i))
+                        .sum();
                     guesses *= shifted_variations;
                 }
             }
@@ -445,8 +444,8 @@ impl Estimator for RegexEstimator {
         } else {
             match m.regex_name {
                 Some("recent_year") => {
-                    let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap() -
-                                          *REFERENCE_YEAR)
+                    let year_space = (m.regex_match.as_ref().unwrap()[0].parse::<i16>().unwrap()
+                        - *REFERENCE_YEAR)
                         .abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
                 }
@@ -758,11 +757,11 @@ mod tests {
     #[test]
     fn test_sequence_guesses() {
         let test_data = [
-            ("ab", true, 4 * 2), // obvious start * len-2
-            ("XYZ", true, 26 * 3), // base26 * len-3
-            ("4567", true, 10 * 4), // base10 * len-4
+            ("ab", true, 4 * 2),         // obvious start * len-2
+            ("XYZ", true, 26 * 3),       // base26 * len-3
+            ("4567", true, 10 * 4),      // base10 * len-4
             ("7654", false, 10 * 4 * 2), // base10 * len 4 * descending
-            ("ZYX", false, 4 * 3 * 2) /* obvious start * len-3 * descending */,
+            ("ZYX", false, 4 * 3 * 2),   /* obvious start * len-3 * descending */
         ];
         for &(token, ascending, guesses) in &test_data {
             let mut m = MatchBuilder::default()
@@ -866,8 +865,8 @@ mod tests {
             .shifted_count(Some(0))
             .build()
             .unwrap();
-        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS *
-            *scoring::KEYBOARD_AVERAGE_DEGREE * (m.token.len() - 1);
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS * *scoring::KEYBOARD_AVERAGE_DEGREE
+            * (m.token.len() - 1);
         assert_eq!(
             (scoring::SpatialEstimator {}).estimate(&mut m),
             base_guesses as u64
@@ -884,10 +883,9 @@ mod tests {
             .shifted_count(Some(2))
             .build()
             .unwrap();
-        let base_guesses = (*scoring::KEYBOARD_STARTING_POSITIONS *
-                                *scoring::KEYBOARD_AVERAGE_DEGREE *
-                                (m.token.len() - 1)) as u64 *
-            (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
+        let base_guesses = (*scoring::KEYBOARD_STARTING_POSITIONS
+            * *scoring::KEYBOARD_AVERAGE_DEGREE * (m.token.len() - 1))
+            as u64 * (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
         assert_eq!(
             (scoring::SpatialEstimator {}).estimate(&mut m),
             base_guesses
@@ -904,8 +902,8 @@ mod tests {
             .shifted_count(Some(6))
             .build()
             .unwrap();
-        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS *
-            *scoring::KEYBOARD_AVERAGE_DEGREE * (m.token.len() - 1) * 2;
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS * *scoring::KEYBOARD_AVERAGE_DEGREE
+            * (m.token.len() - 1) * 2;
         assert_eq!(
             (scoring::SpatialEstimator {}).estimate(&mut m),
             base_guesses as u64
@@ -926,10 +924,10 @@ mod tests {
             .map(|i| {
                 (1..::std::cmp::min(m.turns.unwrap() + 1, i))
                     .map(|j| {
-                        scoring::n_ck(i - 1, j - 1) *
-                            (*scoring::KEYBOARD_STARTING_POSITIONS *
-                                 scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32)) as
-                                u64
+                        scoring::n_ck(i - 1, j - 1)
+                            * (*scoring::KEYBOARD_STARTING_POSITIONS
+                                * scoring::KEYBOARD_AVERAGE_DEGREE.pow(j as u32))
+                                as u64
                     })
                     .sum::<u64>()
             })

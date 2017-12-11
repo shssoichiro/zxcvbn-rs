@@ -12,7 +12,7 @@
 //! "passwords must contain three of {lower, upper, numbers, symbols}".
 #![cfg_attr(feature = "clippy", feature(plugin))]
 #![cfg_attr(feature = "clippy", plugin(clippy))]
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 #![warn(missing_docs)]
 
 #[macro_use]
@@ -25,10 +25,10 @@ extern crate lazy_static;
 extern crate quick_error;
 extern crate regex;
 #[cfg(feature = "ser")]
+extern crate serde;
+#[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
-#[cfg(feature = "ser")]
-extern crate serde;
 extern crate time;
 
 #[cfg(test)]

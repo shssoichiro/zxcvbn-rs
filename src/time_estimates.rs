@@ -58,12 +58,10 @@ pub fn estimate_attack_times(guesses: u64) -> (CrackTimes, CrackTimesDisplay, u8
             crack_times_seconds.online_no_throttling_10_per_second,
         ),
         offline_slow_hashing_1e4_per_second: display_time(
-            crack_times_seconds
-                .offline_slow_hashing_1e4_per_second,
+            crack_times_seconds.offline_slow_hashing_1e4_per_second,
         ),
         offline_fast_hashing_1e10_per_second: display_time(
-            crack_times_seconds
-                .offline_fast_hashing_1e10_per_second,
+            crack_times_seconds.offline_fast_hashing_1e10_per_second,
         ),
     };
     (

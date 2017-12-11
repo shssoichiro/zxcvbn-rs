@@ -290,9 +290,7 @@ impl Matcher for SpatialMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
         GRAPHS
             .iter()
-            .flat_map(|(graph_name, graph)| {
-                spatial_match_helper(password, graph, graph_name)
-            })
+            .flat_map(|(graph_name, graph)| spatial_match_helper(password, graph, graph_name))
             .collect()
     }
 }
@@ -315,8 +313,8 @@ fn spatial_match_helper(
         let mut j = i + 1;
         let mut last_direction = None;
         let mut turns = 0;
-        let mut shifted_count = if ["qwerty", "dvorak"].contains(&graph_name) &&
-            SHIFTED_REGEX.is_match(&password[i..(i + 1)])
+        let mut shifted_count = if ["qwerty", "dvorak"].contains(&graph_name)
+            && SHIFTED_REGEX.is_match(&password[i..(i + 1)])
         {
             1
         } else {
@@ -525,8 +523,8 @@ impl Matcher for SequenceMatch {
         let mut last_delta = 0;
 
         for k in 1..password.len() {
-            let delta = password[k..(k + 1)].chars().next().unwrap() as i32 -
-                password[(k - 1)..k].chars().next().unwrap() as i32;
+            let delta = password[k..(k + 1)].chars().next().unwrap() as i32
+                - password[(k - 1)..k].chars().next().unwrap() as i32;
             if last_delta == 0 {
                 last_delta = delta;
             }
@@ -702,9 +700,7 @@ impl Matcher for DateMatch {
 
         matches
             .iter()
-            .filter(|&x| {
-                !matches.iter().any(|y| *x != *y && y.i <= x.i && y.j >= x.j)
-            })
+            .filter(|&x| !matches.iter().any(|y| *x != *y && y.i <= x.i && y.j >= x.j))
             .cloned()
             .collect()
     }
@@ -964,7 +960,7 @@ mod tests {
                     ('g', vec!['6']),
                     ('o', vec!['0']),
                 ].into_iter()
-                    .collect()
+                    .collect(),
             ),
         ];
         for (pw, expected) in test_data {
@@ -978,14 +974,14 @@ mod tests {
             (HashMap::new(), vec![HashMap::new()]),
             (
                 vec![('a', vec!['@'])].into_iter().collect(),
-                vec![vec![('@', 'a')].into_iter().collect()]
+                vec![vec![('@', 'a')].into_iter().collect()],
             ),
             (
                 vec![('a', vec!['@', '4'])].into_iter().collect(),
                 vec![
                     vec![('@', 'a')].into_iter().collect(),
                     vec![('4', 'a')].into_iter().collect(),
-                ]
+                ],
             ),
             (
                 vec![('a', vec!['@', '4']), ('c', vec!['('])]
@@ -994,7 +990,7 @@ mod tests {
                 vec![
                     vec![('@', 'a'), ('(', 'c')].into_iter().collect(),
                     vec![('4', 'a'), ('(', 'c')].into_iter().collect(),
-                ]
+                ],
             ),
         ];
         for (table, subs) in test_data {
@@ -1089,9 +1085,7 @@ mod tests {
             let matches = (matching::SpatialMatch {}).get_matches(password, &HashMap::new());
             let result = matches
                 .into_iter()
-                .find(|m| {
-                    m.token == *password && m.graph == Some(keyboard.to_string())
-                })
+                .find(|m| m.token == *password && m.graph == Some(keyboard.to_string()))
                 .unwrap();
             assert_eq!(result.turns, Some(turns));
             assert_eq!(result.shifted_count, Some(shifts));
@@ -1112,13 +1106,11 @@ mod tests {
     fn test_matches_overlapping_sequences() {
         let password = "abcbabc";
         let matches = (matching::SequenceMatch {}).get_matches(password, &HashMap::new());
-        for &(pattern, i, j, ascending) in
-            &[
-                ("abc", 0, 2, true),
-                ("cba", 2, 4, false),
-                ("abc", 4, 6, true),
-            ]
-        {
+        for &(pattern, i, j, ascending) in &[
+            ("abc", 0, 2, true),
+            ("cba", 2, 4, false),
+            ("abc", 4, 6, true),
+        ] {
             let m = matches
                 .iter()
                 .find(|m| m.token == *pattern && m.i == i && m.j == j)
@@ -1404,9 +1396,11 @@ mod tests {
         ];
         let matches = matching::omnimatch(password, &HashMap::new());
         for &(pattern_name, i, j) in &expected {
-            assert!(matches.iter().any(|m| {
-                m.pattern == pattern_name && m.i == i && m.j == j
-            }));
+            assert!(
+                matches
+                    .iter()
+                    .any(|m| m.pattern == pattern_name && m.i == i && m.j == j)
+            );
         }
     }
 }
