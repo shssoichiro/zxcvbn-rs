@@ -1,3 +1,9 @@
+**Version 0.6.3 (unreleased)**
+ - Refactor handling of strings to use streaming of characters. This brings zxcvbn closer to working on UTF-8 inputs.
+
+**Version 0.6.2**
+ - Upgrade dependencies and fix linter warnings
+
 **Version 0.6.1**
  - Upgrade `derive_builder` to 0.5.0
  - Fix a bug that was causing incorrect scoring for some passwords (https://github.com/shssoichiro/zxcvbn-rs/issues/13)

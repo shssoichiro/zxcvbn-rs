@@ -39,12 +39,6 @@ pub struct Match {
     pub l33t_variations: Option<u64>,
 }
 
-impl Match {
-    pub fn build(&mut self) -> Match {
-        self.clone()
-    }
-}
-
 #[doc(hidden)]
 pub fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
     let mut matches: Vec<Match> = MATCHERS
@@ -110,20 +104,24 @@ impl Matcher for DictionaryMatch {
             dictionary_name: &'static str,
             ranked_dict: &HashMap<&str, usize>,
         ) {
-            let len = password.len();
+            let len = password.chars().count();
             let password_lower = password.to_lowercase();
             for i in 0..len {
                 for j in i..len {
-                    let word = &password_lower[i..(j + 1)];
-                    if let Some(rank) = ranked_dict.get(word) {
+                    let word = password_lower
+                        .chars()
+                        .take(j + 1)
+                        .skip(i)
+                        .collect::<String>();
+                    if let Some(rank) = ranked_dict.get(&word.as_str()).cloned() {
                         matches.push(
                             MatchBuilder::default()
                                 .pattern("dictionary")
                                 .i(i)
                                 .j(j)
-                                .token(password[i..(j + 1)].to_string())
-                                .matched_word(Some(word.to_string()))
-                                .rank(Some(*rank))
+                                .token(password.chars().take(j + 1).skip(i).collect())
+                                .matched_word(Some(word))
+                                .rank(Some(rank))
                                 .dictionary_name(Some(dictionary_name))
                                 .build()
                                 .unwrap(),
@@ -181,7 +179,11 @@ impl Matcher for L33tMatch {
             }
             let subbed_password = translate(password, &sub);
             for mut m4tch in (DictionaryMatch {}).get_matches(&subbed_password, user_inputs) {
-                let token = &password[m4tch.i..(m4tch.j + 1)];
+                let token = password
+                    .chars()
+                    .take(m4tch.j + 1)
+                    .skip(m4tch.i)
+                    .collect::<String>();
                 if Some(token.to_lowercase()) == m4tch.matched_word {
                     // Only return the matches that contain an actual substitution
                     continue;
@@ -191,7 +193,7 @@ impl Matcher for L33tMatch {
                     .filter(|&(subbed_chr, _)| token.contains(subbed_chr))
                     .collect();
                 m4tch.l33t = true;
-                m4tch.token = token.to_string();
+                m4tch.token = token;
                 m4tch.sub_display = Some(
                     match_sub
                         .iter()
@@ -295,9 +297,11 @@ impl Matcher for SpatialMatch {
     }
 }
 
-lazy_static! {
-    static ref SHIFTED_REGEX: Regex = Regex::new("[~!@#$%^&*()_+QWERTYUIOP{}|ASDFGHJKL:\"ZXCVBNM<>?]").unwrap();
-}
+const SHIFTED_CHARS: [char; 49] = [
+    '[', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', 'Q', 'W', 'E', 'R', 'T',
+    'Y', 'U', 'I', 'O', 'P', '{', '}', '|', 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"',
+    'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', ']',
+];
 
 fn spatial_match_helper(
     password: &str,
@@ -305,30 +309,31 @@ fn spatial_match_helper(
     graph_name: &str,
 ) -> Vec<Match> {
     let mut matches = Vec::new();
-    if password.len() <= 2 {
+    let password_len = password.chars().count();
+    if password_len <= 2 {
         return matches;
     }
     let mut i = 0;
-    while i < password.len() - 1 {
+    while i < password_len - 1 {
         let mut j = i + 1;
         let mut last_direction = None;
         let mut turns = 0;
         let mut shifted_count = if ["qwerty", "dvorak"].contains(&graph_name)
-            && SHIFTED_REGEX.is_match(&password[i..(i + 1)])
+            && SHIFTED_CHARS.contains(&password.chars().nth(i).unwrap())
         {
             1
         } else {
             0
         };
         loop {
-            let prev_char = password[j - 1..j].chars().next().unwrap();
+            let prev_char = password.chars().nth(j - 1).unwrap();
             let mut found = false;
             let found_direction;
             let mut cur_direction = -1;
             let adjacents = graph.get(&prev_char).cloned().unwrap_or_else(|| vec![]);
             // consider growing pattern by one character if j hasn't gone over the edge.
-            if j < password.len() {
-                let cur_char = password[j..(j + 1)].chars().next().unwrap();
+            if j < password_len {
+                let cur_char = password.chars().nth(j).unwrap();
                 for adj in adjacents {
                     cur_direction += 1;
                     if let Some(adj) = adj {
@@ -365,7 +370,7 @@ fn spatial_match_helper(
                             .pattern("spatial")
                             .i(i)
                             .j(j - 1)
-                            .token(password[i..j].to_string())
+                            .token(password.chars().take(j).skip(i).collect())
                             .graph(Some(graph_name.to_string()))
                             .turns(Some(turns))
                             .shifted_count(Some(shifted_count))
@@ -393,39 +398,41 @@ impl Matcher for RepeatMatch {
 
         let mut matches = Vec::new();
         let mut last_index = 0;
-        while last_index < password.len() {
-            let greedy_matches = GREEDY_REGEX.captures(&password[last_index..]).unwrap();
+        while last_index < password.chars().count() {
+            let token = password.chars().skip(last_index).collect::<String>();
+            let greedy_matches = GREEDY_REGEX.captures(&token).unwrap();
             if greedy_matches.is_none() {
                 break;
             }
-            let lazy_matches = LAZY_REGEX.captures(&password[last_index..]).unwrap();
+            let lazy_matches = LAZY_REGEX.captures(&token).unwrap();
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
             let m4tch;
-            let base_token =
-                if greedy_matches.at(0).unwrap().len() > lazy_matches.at(0).unwrap().len() {
-                    // greedy beats lazy for 'aabaab'
-                    //   greedy: [aabaab, aab]
-                    //   lazy:   [aa,     a]
-                    m4tch = greedy_matches;
-                    // greedy's repeated string might itself be repeated, eg.
-                    // aabaab in aabaabaabaab.
-                    // run an anchored lazy match on greedy's repeated string
-                    // to find the shortest repeated string
-                    LAZY_ANCHORED_REGEX
-                        .captures(m4tch.at(0).unwrap())
-                        .unwrap()
-                        .unwrap()
-                        .at(1)
-                        .unwrap()
-                        .to_string()
-                } else {
-                    // lazy beats greedy for 'aaaaa'
-                    //   greedy: [aaaa,  aa]
-                    //   lazy:   [aaaaa, a]
-                    m4tch = lazy_matches;
-                    m4tch.at(1).unwrap().to_string()
-                };
+            let base_token = if greedy_matches.at(0).unwrap().chars().count()
+                > lazy_matches.at(0).unwrap().chars().count()
+            {
+                // greedy beats lazy for 'aabaab'
+                //   greedy: [aabaab, aab]
+                //   lazy:   [aa,     a]
+                m4tch = greedy_matches;
+                // greedy's repeated string might itself be repeated, eg.
+                // aabaab in aabaabaabaab.
+                // run an anchored lazy match on greedy's repeated string
+                // to find the shortest repeated string
+                LAZY_ANCHORED_REGEX
+                    .captures(m4tch.at(0).unwrap())
+                    .unwrap()
+                    .unwrap()
+                    .at(1)
+                    .unwrap()
+                    .to_string()
+            } else {
+                // lazy beats greedy for 'aaaaa'
+                //   greedy: [aaaa,  aa]
+                //   lazy:   [aaaaa, a]
+                m4tch = lazy_matches;
+                m4tch.at(1).unwrap().to_string()
+            };
             let (i, j) = (
                 m4tch.pos(0).unwrap().0 + last_index,
                 m4tch.pos(0).unwrap().1 + last_index - 1,
@@ -478,31 +485,25 @@ impl Matcher for SequenceMatch {
         fn update(i: usize, j: usize, delta: i32, password: &str, matches: &mut Vec<Match>) {
             let delta_abs = delta.abs();
             if (j - i > 1 || delta_abs == 1) && (0 < delta_abs && delta_abs <= MAX_DELTA) {
-                let token = &password[i..(j + 1)];
-                let sequence_name;
-                let sequence_space;
-                let first_char = token.chars().next().unwrap();
-                if first_char.is_lowercase() {
-                    sequence_name = "lower";
-                    sequence_space = 26;
-                } else if first_char.is_uppercase() {
-                    sequence_name = "upper";
-                    sequence_space = 26;
-                } else if first_char.is_digit(10) {
-                    sequence_name = "digits";
-                    sequence_space = 10;
+                let token = password.chars().take(j + 1).skip(i).collect::<String>();
+                let first_chr = token.chars().next().unwrap();
+                let (sequence_name, sequence_space) = if first_chr.is_lowercase() {
+                    ("lower", 26)
+                } else if first_chr.is_uppercase() {
+                    ("upper", 26)
+                } else if first_chr.is_digit(10) {
+                    ("digits", 10)
                 } else {
                     // conservatively stick with roman alphabet size.
                     // (this could be improved)
-                    sequence_name = "unicode";
-                    sequence_space = 26;
-                }
+                    ("unicode", 26)
+                };
                 matches.push(
                     MatchBuilder::default()
                         .pattern("sequence")
                         .i(i)
                         .j(j)
-                        .token(token.to_string())
+                        .token(token)
                         .sequence_name(Some(sequence_name))
                         .sequence_space(Some(sequence_space))
                         .ascending(Some(delta > 0))
@@ -514,7 +515,8 @@ impl Matcher for SequenceMatch {
 
         let mut matches = Vec::new();
 
-        if password.len() <= 1 {
+        let password_len = password.chars().count();
+        if password_len <= 1 {
             return matches;
         }
 
@@ -522,7 +524,7 @@ impl Matcher for SequenceMatch {
         let mut j;
         let mut last_delta = 0;
 
-        for k in 1..password.len() {
+        for k in 1..password_len {
             let delta = password[k..(k + 1)].chars().next().unwrap() as i32
                 - password[(k - 1)..k].chars().next().unwrap() as i32;
             if last_delta == 0 {
@@ -536,7 +538,7 @@ impl Matcher for SequenceMatch {
             i = j;
             last_delta = delta;
         }
-        update(i, password.len() - 1, last_delta, password, &mut matches);
+        update(i, password_len - 1, last_delta, password, &mut matches);
         matches
     }
 }
@@ -603,20 +605,22 @@ impl Matcher for DateMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
         let mut matches = Vec::new();
 
+        let password_len = password.chars().count();
         // dates without separators are between length 4 '1191' and 8 '11111991'
-        if password.len() < 4 {
+        if password_len < 4 {
             return matches;
         }
-        for i in 0..(password.len() - 3) {
+        for i in 0..(password_len - 3) {
             for j in (i + 3)..(i + 8) {
-                if j >= password.len() {
+                if j >= password_len {
                     break;
                 }
-                let token = &password[i..(j + 1)];
-                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(token) {
+                let token = password.chars().take(j + 1).skip(i).collect::<String>();
+                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(&token) {
                     continue;
                 }
                 let mut candidates = Vec::new();
+                // Safe to use slice manipulation because dates are guaranteed to be ASCII
                 for &(k, l) in &DATE_SPLITS[&token.len()] {
                     let ymd = map_ints_to_ymd(
                         token[0..k].parse().unwrap(),
@@ -643,10 +647,10 @@ impl Matcher for DateMatch {
                 matches.push(
                     MatchBuilder::default()
                         .pattern("date")
-                        .token(token.to_string())
+                        .token(token)
                         .i(i)
                         .j(j)
-                        .separator(Some("".to_string()))
+                        .separator(Some(String::new()))
                         .year(Some(best_candidate.0))
                         .month(Some(best_candidate.1))
                         .day(Some(best_candidate.2))
@@ -657,36 +661,41 @@ impl Matcher for DateMatch {
         }
 
         // dates with separators are between length 6 '1/1/91' and 10 '11/11/1991'
-        if password.len() >= 6 {
-            for i in 0..(password.len() - 5) {
+        if password_len >= 6 {
+            for i in 0..(password_len - 5) {
                 for j in (i + 5)..(i + 10) {
-                    if j >= password.len() {
+                    if j >= password_len {
                         break;
                     }
-                    let token = &password[i..(j + 1)];
-                    let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(token);
-                    if captures.is_none() {
-                        continue;
-                    }
-                    let captures = captures.unwrap();
-                    if captures[2] != captures[4] {
-                        // Original code uses regex backreferences, Rust doesn't support these.
-                        // Need to manually test that group 2 and 4 are the same
-                        continue;
-                    }
-                    let ymd = map_ints_to_ymd(
-                        captures[1].parse().unwrap(),
-                        captures[3].parse().unwrap(),
-                        captures[5].parse().unwrap(),
-                    );
+                    let token = password.chars().take(j + 1).skip(i).collect::<String>();
+                    let (ymd, separator) = {
+                        let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(&token);
+                        if captures.is_none() {
+                            continue;
+                        }
+                        let captures = captures.unwrap();
+                        if captures[2] != captures[4] {
+                            // Original code uses regex backreferences, Rust doesn't support these.
+                            // Need to manually test that group 2 and 4 are the same
+                            continue;
+                        }
+                        (
+                            map_ints_to_ymd(
+                                captures[1].parse().unwrap(),
+                                captures[3].parse().unwrap(),
+                                captures[5].parse().unwrap(),
+                            ),
+                            captures[2].to_string(),
+                        )
+                    };
                     if let Some(ymd) = ymd {
                         matches.push(
                             MatchBuilder::default()
                                 .pattern("date")
-                                .token(token.to_string())
+                                .token(token)
                                 .i(i)
                                 .j(j)
-                                .separator(Some(captures[2].to_string()))
+                                .separator(Some(separator))
                                 .year(Some(ymd.0))
                                 .month(Some(ymd.1))
                                 .day(Some(ymd.2))

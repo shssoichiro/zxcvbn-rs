@@ -44,7 +44,7 @@ pub fn most_guessable_match_sequence(
     matches: &[::matching::Match],
     exclude_additive: bool,
 ) -> GuessCalculation {
-    let n = password.len();
+    let n = password.chars().count();
 
     // partition matches into sublists according to ending index j
     let mut matches_by_j: Vec<Vec<Match>> = (0..n).map(|_| Vec::new()).collect();
@@ -209,8 +209,8 @@ fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
         // a match's guess estimate doesn't change. cache it.
         return guesses;
     }
-    let min_guesses = if m.token.len() < password.len() {
-        if m.token.len() == 1 {
+    let min_guesses = if m.token.chars().count() < password.chars().count() {
+        if m.token.chars().count() == 1 {
             MIN_SUBMATCH_GUESSES_SINGLE_CHAR
         } else {
             MIN_SUBMATCH_GUESSES_MULTI_CHAR
@@ -249,14 +249,15 @@ struct BruteForceEstimator {}
 impl Estimator for BruteForceEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         let mut guesses = BRUTEFORCE_CARDINALITY;
-        if m.token.len() >= 2 {
-            for _ in 2..m.token.len() {
+        let token_len = m.token.chars().count();
+        if token_len >= 2 {
+            for _ in 2..token_len {
                 guesses = guesses.saturating_mul(BRUTEFORCE_CARDINALITY);
             }
         }
         // small detail: make bruteforce matches at minimum one guess bigger than smallest allowed
         // submatch guesses, such that non-bruteforce submatches over the same [i..j] take precedence.
-        let min_guesses = if m.token.len() == 1 {
+        let min_guesses = if token_len == 1 {
             MIN_SUBMATCH_GUESSES_SINGLE_CHAR + 1
         } else {
             MIN_SUBMATCH_GUESSES_MULTI_CHAR + 1
@@ -357,7 +358,7 @@ impl Estimator for SpatialEstimator {
             (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
         };
         let mut guesses = 0;
-        let len = m.token.len();
+        let len = m.token.chars().count();
         let turns = m.turns.unwrap();
         // estimate the number of possible patterns w/ length L or less with t turns or less.
         for i in 2..(len + 1) {
@@ -431,7 +432,7 @@ impl Estimator for SequenceEstimator {
             // 2x guesses
             base_guesses *= 2;
         }
-        base_guesses * m.token.len() as u64
+        base_guesses * m.token.chars().count() as u64
     }
 }
 
@@ -440,7 +441,7 @@ struct RegexEstimator {}
 impl Estimator for RegexEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
         if CHAR_CLASS_BASES.keys().any(|x| x == &m.regex_name.unwrap()) {
-            CHAR_CLASS_BASES[m.regex_name.unwrap()].pow(m.token.len() as u32)
+            CHAR_CLASS_BASES[m.regex_name.unwrap()].pow(m.token.chars().count() as u32)
         } else {
             match m.regex_name {
                 Some("recent_year") => {

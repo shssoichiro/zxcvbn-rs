@@ -105,11 +105,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
 
     // Only evaluate the first 100 characters of the input.
     // This prevents potential DoS attacks from sending extremely long input strings.
-    let password = if password.len() > 100 {
-        &password[0..100]
-    } else {
-        password
-    };
+    let password = password.chars().take(100).collect::<String>();
 
     let sanitized_inputs = user_inputs
         .iter()
@@ -117,8 +113,8 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         .map(|(i, x)| (x.to_lowercase(), i + 1))
         .collect();
 
-    let matches = matching::omnimatch(password, &sanitized_inputs);
-    let result = scoring::most_guessable_match_sequence(password, &matches, false);
+    let matches = matching::omnimatch(&password, &sanitized_inputs);
+    let result = scoring::most_guessable_match_sequence(&password, &matches, false);
     let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
     let (attack_times, attack_times_display, score) =
         time_estimates::estimate_attack_times(result.guesses);
