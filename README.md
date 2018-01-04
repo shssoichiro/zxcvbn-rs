@@ -52,7 +52,7 @@ extern crate zxcvbn;
 use zxcvbn::zxcvbn;
 
 fn main() {
-    let estimate = zxcvbn("correcthorsebatterystaple", None).unwrap();
+    let estimate = zxcvbn("correcthorsebatterystaple", &[]).unwrap();
     println!("{}", estimate.score); // 3
 }
 ```
