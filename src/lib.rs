@@ -153,7 +153,6 @@ mod tests {
     fn test_zxcvbn() {
         let password = "r0sebudmaelstrom11/20/91aaaa";
         let entropy = zxcvbn(password, &[]).unwrap();
-        assert_eq!(entropy.guesses, 455972282752000);
         assert_eq!(entropy.guesses_log10, 14);
         assert_eq!(entropy.score, 4);
         assert!(!entropy.sequence.is_empty());
