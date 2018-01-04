@@ -30,7 +30,7 @@ optional = true
 version = "1.0.0"
 
 [dev-dependencies]
-quickcheck = "0.5.0"
+quickcheck = "0.6.0"
 serde_json = "1.0.0"
 
 [features]
