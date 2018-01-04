@@ -503,7 +503,7 @@ mod tests {
             (0, 5, 0),
             (2, 1, 2),
             (4, 2, 6),
-            (33, 7, 4272048),
+            (33, 7, 4_272_048),
         ];
         for &(n, k, result) in &test_data {
             assert_eq!(scoring::n_ck(n, k), result);
