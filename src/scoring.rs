@@ -251,7 +251,7 @@ impl Estimator for BruteForceEstimator {
         let mut guesses = BRUTEFORCE_CARDINALITY;
         let token_len = m.token.chars().count();
         if token_len >= 2 {
-            for _ in 2..token_len {
+            for _ in 2..(token_len + 1) {
                 guesses = guesses.saturating_mul(BRUTEFORCE_CARDINALITY);
             }
         }

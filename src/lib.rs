@@ -149,6 +149,7 @@ mod tests {
     fn test_zxcvbn() {
         let password = "r0sebudmaelstrom11/20/91aaaa";
         let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.guesses, 473_471_216_704_000);
         assert_eq!(entropy.guesses_log10, 14);
         assert_eq!(entropy.score, 4);
         assert!(!entropy.sequence.is_empty());
@@ -160,5 +161,23 @@ mod tests {
         let password = "Imaginative-Say-Shoulder-Dish-0";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.score, 4);
+    }
+
+    #[test]
+    fn test_issue_15_example_1() {
+        let password = "TestMeNow!";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.guesses, 372_010_000);
+        assert_eq!(entropy.guesses_log10, 8);
+        assert_eq!(entropy.score, 3);
+    }
+
+    #[test]
+    fn test_issue_15_example_2() {
+        let password = "hey<123";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.guesses, 1_010_000);
+        assert_eq!(entropy.guesses_log10, 6);
+        assert_eq!(entropy.score, 2);
     }
 }
