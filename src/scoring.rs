@@ -350,7 +350,7 @@ struct SpatialEstimator {}
 
 impl Estimator for SpatialEstimator {
     fn estimate(&self, m: &mut Match) -> u64 {
-        #[allow(clone_on_copy)]
+        #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
         let (starts, degree) = if ["qwerty", "dvorak"].contains(&m.graph.as_ref().unwrap().as_str())
         {
             (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
