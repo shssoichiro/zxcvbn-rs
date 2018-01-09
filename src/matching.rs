@@ -3,39 +3,70 @@ use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashMap;
 
+/// A match of a predictable pattern in the password.
 #[derive(Debug, Clone, Default, PartialEq, Builder)]
 #[builder(default)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Match {
+    /// Name of the pattern.
     pub pattern: &'static str,
+    /// Beginning of the match.
     pub i: usize,
+    /// End of the match.
     pub j: usize,
+    /// Token that has been matched.
     pub token: String,
+    /// Word that has been found in a dictionary.
     pub matched_word: Option<String>,
+    /// Rank of the the word found in a dictionary.
     pub rank: Option<usize>,
+    /// Name of the dictionary in which a word has been found.
     pub dictionary_name: Option<&'static str>,
+    /// Name of the graph for which a spatial match has been found.
     pub graph: Option<String>,
+    /// Whether a reversed word has been found in a dictionary.
     pub reversed: bool,
+    /// Whether a l33t-substituted word has been found in a dictionary.
     pub l33t: bool,
+    /// Substitutions used for the match.
     pub sub: Option<HashMap<char, char>>,
+    /// String for displaying the substitutions used for the match.
     pub sub_display: Option<String>,
+    /// Number of turns in the matched spatial pattern.
     pub turns: Option<usize>,
+    /// Number of shifts in the matched spatial pattern.
     pub shifted_count: Option<usize>,
+    /// Base token that repeats in the matched pattern.
     pub base_token: Option<String>,
+    /// Matches for the repeating token.
     pub base_matches: Option<Vec<Match>>,
+    /// Estimated number of tries for guessing the repeating token.
     pub base_guesses: Option<u64>,
+    /// Number of repetitions in the matched pattern.
     pub repeat_count: Option<usize>,
+    /// Name of the sequence that was matched.
     pub sequence_name: Option<&'static str>,
+    /// Size of the sequence that was matched.
     pub sequence_space: Option<u8>,
+    /// Whether the matched sequence is ascending.
     pub ascending: Option<bool>,
+    /// Name of the regular expression that was matched.
     pub regex_name: Option<&'static str>,
+    /// Matches of the regular expression.
     pub regex_match: Option<Vec<String>>,
+    /// Separator of a date that was matched.
     pub separator: Option<String>,
+    /// Year that was matched.
     pub year: Option<i16>,
+    /// Month that was matched.
     pub month: Option<i8>,
+    /// Day that was matched.
     pub day: Option<i8>,
+    /// Estimated number of tries for guessing the match.
     pub guesses: Option<u64>,
+    /// Number of variations of the matched dictionary word.
     pub uppercase_variations: Option<u64>,
+    /// Number of variations of the matched dictionary word.
     pub l33t_variations: Option<u64>,
 }
 

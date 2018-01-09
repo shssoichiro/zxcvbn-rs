@@ -35,8 +35,7 @@ extern crate time;
 #[macro_use]
 extern crate quickcheck;
 
-use std::ascii::AsciiExt;
-use matching::Match;
+pub use matching::Match;
 
 mod adjacency_graphs;
 pub mod feedback;
