@@ -1,4 +1,4 @@
-**Version 0.7.0 (unreleased)**
+**Version 0.7.0**
  - [SEMVER_MAJOR] Refactor `Match` to use an enum internally, to avoid cluttering the struct with several `Option` types (https://github.com/shssoichiro/zxcvbn-rs/issues/19)
  - Make `Match` public (https://github.com/shssoichiro/zxcvbn-rs/issues/17)
 
