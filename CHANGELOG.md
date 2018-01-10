@@ -1,3 +1,7 @@
+**Version 0.7.0 (unreleased)**
+ - [SEMVER_MAJOR] Refactor `Match` to use an enum internally, to avoid cluttering the struct with several `Option` types (https://github.com/shssoichiro/zxcvbn-rs/issues/19)
+ - Make `Match` public (https://github.com/shssoichiro/zxcvbn-rs/issues/17)
+
 **Version 0.6.3**
  - Refactor handling of strings to use streaming of characters. This brings zxcvbn closer to working on UTF-8 inputs.
  - Fix an issue that would cause bruteforce scores to be too low (https://github.com/shssoichiro/zxcvbn-rs/issues/15)

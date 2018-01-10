@@ -40,7 +40,8 @@ pub use matching::Match;
 mod adjacency_graphs;
 pub mod feedback;
 mod frequency_lists;
-mod matching;
+/// Defines structures for matches found in a password
+pub mod matching;
 mod scoring;
 pub mod time_estimates;
 

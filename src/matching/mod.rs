@@ -1,75 +1,30 @@
+/// Defines potential patterns used to match against a password
+pub mod patterns;
+
 use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashMap;
+use self::patterns::*;
 
 /// A match of a predictable pattern in the password.
-#[derive(Debug, Clone, Default, PartialEq, Builder)]
+#[derive(Debug, Clone, PartialEq, Default, Builder)]
 #[builder(default)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Match {
-    /// Name of the pattern.
-    pub pattern: &'static str,
     /// Beginning of the match.
     pub i: usize,
     /// End of the match.
     pub j: usize,
     /// Token that has been matched.
     pub token: String,
-    /// Word that has been found in a dictionary.
-    pub matched_word: Option<String>,
-    /// Rank of the the word found in a dictionary.
-    pub rank: Option<usize>,
-    /// Name of the dictionary in which a word has been found.
-    pub dictionary_name: Option<&'static str>,
-    /// Name of the graph for which a spatial match has been found.
-    pub graph: Option<String>,
-    /// Whether a reversed word has been found in a dictionary.
-    pub reversed: bool,
-    /// Whether a l33t-substituted word has been found in a dictionary.
-    pub l33t: bool,
-    /// Substitutions used for the match.
-    pub sub: Option<HashMap<char, char>>,
-    /// String for displaying the substitutions used for the match.
-    pub sub_display: Option<String>,
-    /// Number of turns in the matched spatial pattern.
-    pub turns: Option<usize>,
-    /// Number of shifts in the matched spatial pattern.
-    pub shifted_count: Option<usize>,
-    /// Base token that repeats in the matched pattern.
-    pub base_token: Option<String>,
-    /// Matches for the repeating token.
-    pub base_matches: Option<Vec<Match>>,
-    /// Estimated number of tries for guessing the repeating token.
-    pub base_guesses: Option<u64>,
-    /// Number of repetitions in the matched pattern.
-    pub repeat_count: Option<usize>,
-    /// Name of the sequence that was matched.
-    pub sequence_name: Option<&'static str>,
-    /// Size of the sequence that was matched.
-    pub sequence_space: Option<u8>,
-    /// Whether the matched sequence is ascending.
-    pub ascending: Option<bool>,
-    /// Name of the regular expression that was matched.
-    pub regex_name: Option<&'static str>,
-    /// Matches of the regular expression.
-    pub regex_match: Option<Vec<String>>,
-    /// Separator of a date that was matched.
-    pub separator: Option<String>,
-    /// Year that was matched.
-    pub year: Option<i16>,
-    /// Month that was matched.
-    pub month: Option<i8>,
-    /// Day that was matched.
-    pub day: Option<i8>,
+    /// Pattern type and details used to detect this match.
+    pub pattern: MatchPattern,
     /// Estimated number of tries for guessing the match.
     pub guesses: Option<u64>,
-    /// Number of variations of the matched dictionary word.
-    pub uppercase_variations: Option<u64>,
-    /// Number of variations of the matched dictionary word.
-    pub l33t_variations: Option<u64>,
 }
 
+#[cfg_attr(feature = "clippy", allow(implicit_hasher))]
 #[doc(hidden)]
 pub fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
     let mut matches: Vec<Match> = MATCHERS
@@ -145,15 +100,20 @@ impl Matcher for DictionaryMatch {
                         .skip(i)
                         .collect::<String>();
                     if let Some(rank) = ranked_dict.get(&word.as_str()).cloned() {
+                        let pattern = MatchPattern::Dictionary(
+                            DictionaryPatternBuilder::default()
+                                .matched_word(word)
+                                .rank(rank)
+                                .dictionary_name(dictionary_name)
+                                .build()
+                                .unwrap(),
+                        );
                         matches.push(
                             MatchBuilder::default()
-                                .pattern("dictionary")
+                                .pattern(pattern)
                                 .i(i)
                                 .j(j)
                                 .token(password.chars().take(j + 1).skip(i).collect())
-                                .matched_word(Some(word))
-                                .rank(Some(rank))
-                                .dictionary_name(Some(dictionary_name))
                                 .build()
                                 .unwrap(),
                         );
@@ -189,7 +149,9 @@ impl Matcher for ReverseDictionaryMatch {
             .map(|mut m| {
                 // Reverse token back
                 m.token = m.token.chars().rev().collect();
-                m.reversed = true;
+                if let MatchPattern::Dictionary(ref mut pattern) = m.pattern {
+                    pattern.reversed = true;
+                }
                 let old_i = m.i;
                 m.i = password.len() - 1 - m.j;
                 m.j = password.len() - 1 - old_i;
@@ -215,23 +177,30 @@ impl Matcher for L33tMatch {
                     .take(m4tch.j + 1)
                     .skip(m4tch.i)
                     .collect::<String>();
-                if Some(token.to_lowercase()) == m4tch.matched_word {
-                    // Only return the matches that contain an actual substitution
-                    continue;
+                {
+                    let pattern = if let MatchPattern::Dictionary(ref mut pattern) = m4tch.pattern {
+                        pattern
+                    } else {
+                        unreachable!()
+                    };
+                    if token.to_lowercase() == pattern.matched_word {
+                        // Only return the matches that contain an actual substitution
+                        continue;
+                    }
+                    let match_sub: HashMap<char, char> = sub.clone()
+                        .into_iter()
+                        .filter(|&(subbed_chr, _)| token.contains(subbed_chr))
+                        .collect();
+                    m4tch.token = token;
+                    pattern.l33t = true;
+                    pattern.sub_display = Some(
+                        match_sub
+                            .iter()
+                            .map(|(k, v)| format!("{} -> {}", k, v))
+                            .collect(),
+                    );
+                    pattern.sub = Some(match_sub);
                 }
-                let match_sub: HashMap<char, char> = sub.clone()
-                    .into_iter()
-                    .filter(|&(subbed_chr, _)| token.contains(subbed_chr))
-                    .collect();
-                m4tch.l33t = true;
-                m4tch.token = token;
-                m4tch.sub_display = Some(
-                    match_sub
-                        .iter()
-                        .map(|(k, v)| format!("{} -> {}", k, v))
-                        .collect(),
-                );
-                m4tch.sub = Some(match_sub);
                 matches.push(m4tch);
             }
         }
@@ -396,15 +365,20 @@ fn spatial_match_helper(
                 // otherwise push the pattern discovered so far, if any...
                 if j - i > 2 {
                     // Don't consider length 1 or 2 chains
+                    let pattern = MatchPattern::Spatial(
+                        SpatialPatternBuilder::default()
+                            .graph(graph_name.to_string())
+                            .turns(turns)
+                            .shifted_count(shifted_count)
+                            .build()
+                            .unwrap(),
+                    );
                     matches.push(
                         MatchBuilder::default()
-                            .pattern("spatial")
+                            .pattern(pattern)
                             .i(i)
                             .j(j - 1)
                             .token(password.chars().take(j).skip(i).collect())
-                            .graph(Some(graph_name.to_string()))
-                            .turns(Some(turns))
-                            .shifted_count(Some(shifted_count))
                             .build()
                             .unwrap(),
                     );
@@ -476,16 +450,21 @@ impl Matcher for RepeatMatch {
             );
             let base_matches = base_analysis.sequence;
             let base_guesses = base_analysis.guesses;
+            let pattern = MatchPattern::Repeat(
+                RepeatPatternBuilder::default()
+                    .repeat_count(m4tch.at(0).unwrap().len() / base_token.len())
+                    .base_token(base_token)
+                    .base_guesses(base_guesses)
+                    .base_matches(base_matches)
+                    .build()
+                    .unwrap(),
+            );
             matches.push(
                 MatchBuilder::default()
-                    .pattern("repeat")
+                    .pattern(pattern)
                     .i(i)
                     .j(j)
                     .token(m4tch.at(0).unwrap().to_string())
-                    .repeat_count(Some(m4tch.at(0).unwrap().len() / base_token.len()))
-                    .base_token(Some(base_token))
-                    .base_guesses(Some(base_guesses))
-                    .base_matches(Some(base_matches))
                     .build()
                     .unwrap(),
             );
@@ -529,15 +508,20 @@ impl Matcher for SequenceMatch {
                     // (this could be improved)
                     ("unicode", 26)
                 };
+                let pattern = MatchPattern::Sequence(
+                    SequencePatternBuilder::default()
+                        .sequence_name(sequence_name)
+                        .sequence_space(sequence_space)
+                        .ascending(delta > 0)
+                        .build()
+                        .unwrap(),
+                );
                 matches.push(
                     MatchBuilder::default()
-                        .pattern("sequence")
+                        .pattern(pattern)
                         .i(i)
                         .j(j)
                         .token(token)
-                        .sequence_name(Some(sequence_name))
-                        .sequence_space(Some(sequence_space))
-                        .ascending(Some(delta > 0))
                         .build()
                         .unwrap(),
                 );
@@ -582,19 +566,24 @@ impl Matcher for RegexMatch {
         for (&name, regex) in REGEXES.iter() {
             for capture in regex.captures_iter(password) {
                 let token = &capture[0];
-                matches.push(
-                    MatchBuilder::default()
-                        .pattern("regex")
-                        .token(token.to_string())
-                        .i(capture.get(0).unwrap().start())
-                        .j(capture.get(0).unwrap().end() - 1)
-                        .regex_name(Some(name))
-                        .regex_match(Some(
+                let pattern = MatchPattern::Regex(
+                    RegexPatternBuilder::default()
+                        .regex_name(name)
+                        .regex_match(
                             capture
                                 .iter()
                                 .map(|x| x.unwrap().as_str().to_string())
                                 .collect(),
-                        ))
+                        )
+                        .build()
+                        .unwrap(),
+                );
+                matches.push(
+                    MatchBuilder::default()
+                        .pattern(pattern)
+                        .token(token.to_string())
+                        .i(capture.get(0).unwrap().start())
+                        .j(capture.get(0).unwrap().end() - 1)
                         .build()
                         .unwrap(),
                 );
@@ -675,16 +664,21 @@ impl Matcher for DateMatch {
                     (candidate.0 - *super::scoring::REFERENCE_YEAR).abs()
                 };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
+                let pattern = MatchPattern::Date(
+                    DatePatternBuilder::default()
+                        .separator(String::new())
+                        .year(best_candidate.0)
+                        .month(best_candidate.1)
+                        .day(best_candidate.2)
+                        .build()
+                        .unwrap(),
+                );
                 matches.push(
                     MatchBuilder::default()
-                        .pattern("date")
+                        .pattern(pattern)
                         .token(token)
                         .i(i)
                         .j(j)
-                        .separator(Some(String::new()))
-                        .year(Some(best_candidate.0))
-                        .month(Some(best_candidate.1))
-                        .day(Some(best_candidate.2))
                         .build()
                         .unwrap(),
                 );
@@ -720,16 +714,21 @@ impl Matcher for DateMatch {
                         )
                     };
                     if let Some(ymd) = ymd {
+                        let pattern = MatchPattern::Date(
+                            DatePatternBuilder::default()
+                                .separator(separator)
+                                .year(ymd.0)
+                                .month(ymd.1)
+                                .day(ymd.2)
+                                .build()
+                                .unwrap(),
+                        );
                         matches.push(
                             MatchBuilder::default()
-                                .pattern("date")
+                                .pattern(pattern)
                                 .token(token)
                                 .i(i)
                                 .j(j)
-                                .separator(Some(separator))
-                                .year(Some(ymd.0))
-                                .month(Some(ymd.1))
-                                .day(Some(ymd.2))
                                 .build()
                                 .unwrap(),
                         );
@@ -865,6 +864,7 @@ lazy_static! {
 mod tests {
     use matching;
     use matching::Matcher;
+    use matching::patterns::*;
     use std::collections::HashMap;
     use time;
 
@@ -896,11 +896,14 @@ mod tests {
         let ijs = [(0, 5), (0, 10), (6, 10)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
+            if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
         }
     }
 
@@ -911,11 +914,14 @@ mod tests {
         let ijs = [(0, 6), (1, 8)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
+            if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
         }
     }
 
@@ -926,11 +932,14 @@ mod tests {
         let ijs = [(0, 4)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
+            if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
         }
     }
 
@@ -941,11 +950,14 @@ mod tests {
         let ijs = [(0, 3), (0, 7)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
+            if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
         }
     }
 
@@ -960,12 +972,15 @@ mod tests {
         let ijs = [(0, 7)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
-            assert_eq!(m.dictionary_name, Some("user_inputs"));
+            let p = if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.dictionary_name, "user_inputs");
         }
     }
 
@@ -976,12 +991,15 @@ mod tests {
         let ijs = [(0, 5)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
-            assert_eq!(m.reversed, true);
+            let p = if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.reversed, true);
         }
     }
 
@@ -1045,12 +1063,15 @@ mod tests {
         let ijs = [(0, 5)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
-            assert_eq!(m.l33t, true);
+            let p = if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.l33t, true);
         }
     }
 
@@ -1061,12 +1082,15 @@ mod tests {
         let ijs = [(0, 3), (1, 7)];
         for (k, &pattern) in patterns.iter().enumerate() {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            let pattern_name = "dictionary";
             let (i, j) = ijs[k];
-            assert_eq!(m.pattern, pattern_name);
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
-            assert_eq!(m.l33t, true);
+            let p = if let MatchPattern::Dictionary(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.l33t, true);
         }
     }
 
@@ -1093,14 +1117,19 @@ mod tests {
     #[test]
     fn test_matches_spatial_patterns_surrounded_by_non_spatial_patterns() {
         let password = "6tfGHJ";
-        let result = (matching::SpatialMatch {})
+        let m = (matching::SpatialMatch {})
             .get_matches(password, &HashMap::new())
             .into_iter()
             .find(|m| m.token == *password)
             .unwrap();
-        assert_eq!(result.graph, Some("qwerty".to_string()));
-        assert_eq!(result.turns, Some(2));
-        assert_eq!(result.shifted_count, Some(3));
+        let p = if let MatchPattern::Spatial(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.graph, "qwerty".to_string());
+        assert_eq!(p.turns, 2);
+        assert_eq!(p.shifted_count, 3);
     }
 
     #[test]
@@ -1123,12 +1152,24 @@ mod tests {
         ];
         for (password, keyboard, turns, shifts) in test_data {
             let matches = (matching::SpatialMatch {}).get_matches(password, &HashMap::new());
-            let result = matches
+            let m = matches
                 .into_iter()
-                .find(|m| m.token == *password && m.graph == Some(keyboard.to_string()))
+                .find(|m| {
+                    if let MatchPattern::Spatial(ref p) = m.pattern {
+                        if m.token == *password && p.graph == keyboard {
+                            return true;
+                        }
+                    };
+                    false
+                })
                 .unwrap();
-            assert_eq!(result.turns, Some(turns));
-            assert_eq!(result.shifted_count, Some(shifts));
+            let p = if let MatchPattern::Spatial(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.turns, turns);
+            assert_eq!(p.shifted_count, shifts);
         }
     }
 
@@ -1155,7 +1196,12 @@ mod tests {
                 .iter()
                 .find(|m| m.token == *pattern && m.i == i && m.j == j)
                 .unwrap();
-            assert_eq!(m.ascending, Some(ascending));
+            let p = if let MatchPattern::Sequence(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.ascending, ascending);
         }
     }
 
@@ -1164,8 +1210,13 @@ mod tests {
         let password = "!jihg22";
         let matches = (matching::SequenceMatch {}).get_matches(password, &HashMap::new());
         let m = matches.iter().find(|m| &m.token == "jihg").unwrap();
-        assert_eq!(m.sequence_name, Some("lower"));
-        assert_eq!(m.ascending, Some(false));
+        let p = if let MatchPattern::Sequence(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.sequence_name, "lower");
+        assert_eq!(p.ascending, false);
     }
 
     #[test]
@@ -1188,10 +1239,15 @@ mod tests {
         for &(pattern, name, is_ascending) in &test_data {
             let matches = (matching::SequenceMatch {}).get_matches(pattern, &HashMap::new());
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
-            assert_eq!(m.sequence_name, Some(name));
-            assert_eq!(m.ascending, Some(is_ascending));
             assert_eq!(m.i, 0);
             assert_eq!(m.j, pattern.len() - 1);
+            let p = if let MatchPattern::Sequence(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.sequence_name, name);
+            assert_eq!(p.ascending, is_ascending);
         }
     }
 
@@ -1211,9 +1267,14 @@ mod tests {
         let (i, j) = (3, 7);
         let matches = (matching::RepeatMatch {}).get_matches(password, &HashMap::new());
         let m = matches.iter().find(|m| &m.token == "&&&&&").unwrap();
-        assert_eq!(m.base_token, Some("&".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
+        let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.base_token, "&".to_string());
     }
 
     #[test]
@@ -1224,7 +1285,14 @@ mod tests {
                 let matches = (matching::RepeatMatch {}).get_matches(&password, &HashMap::new());
                 let m = matches
                     .iter()
-                    .find(|m| m.base_token == Some(format!("{}", chr)))
+                    .find(|m| {
+                        if let MatchPattern::Repeat(ref p) = m.pattern {
+                            if p.base_token == format!("{}", chr) {
+                                return true;
+                            }
+                        };
+                        false
+                    })
                     .unwrap();
                 assert_eq!(m.i, 0);
                 assert_eq!(m.j, len - 1);
@@ -1244,9 +1312,14 @@ mod tests {
         ];
         for &(pattern, i, j) in &test_data {
             let m = matches.iter().find(|m| m.token == pattern).unwrap();
-            assert_eq!(m.base_token, Some(pattern[0..1].to_string()));
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
+            let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.base_token, pattern[0..1].to_string());
         }
     }
 
@@ -1262,9 +1335,14 @@ mod tests {
         ];
         for &(pattern, i, j) in &test_data {
             let m = matches.iter().find(|m| m.token == pattern).unwrap();
-            assert_eq!(m.base_token, Some(pattern[0..1].to_string()));
             assert_eq!(m.i, i);
             assert_eq!(m.j, j);
+            let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.base_token, pattern[0..1].to_string());
         }
     }
 
@@ -1274,9 +1352,14 @@ mod tests {
         let (i, j) = (0, 3);
         let matches = (matching::RepeatMatch {}).get_matches(password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == *password).unwrap();
-        assert_eq!(m.base_token, Some("ab".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
+        let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.base_token, "ab".to_string());
     }
 
     #[test]
@@ -1285,9 +1368,14 @@ mod tests {
         let (i, j) = (0, 5);
         let matches = (matching::RepeatMatch {}).get_matches(password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == *password).unwrap();
-        assert_eq!(m.base_token, Some("aab".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
+        let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.base_token, "aab".to_string());
     }
 
     #[test]
@@ -1296,9 +1384,14 @@ mod tests {
         let (i, j) = (0, 7);
         let matches = (matching::RepeatMatch {}).get_matches(password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == *password).unwrap();
-        assert_eq!(m.base_token, Some("ab".to_string()));
         assert_eq!(m.i, i);
         assert_eq!(m.j, j);
+        let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.base_token, "ab".to_string());
     }
 
     #[test]
@@ -1309,7 +1402,12 @@ mod tests {
             let m = matches.iter().find(|m| m.token == *pattern).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, pattern.len() - 1);
-            assert_eq!(m.regex_name, Some(name));
+            let p = if let MatchPattern::Regex(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.regex_name, name);
         }
     }
 
@@ -1322,10 +1420,15 @@ mod tests {
             let m = matches.iter().find(|m| m.token == password).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, password.len() - 1);
-            assert_eq!(m.year, Some(1921));
-            assert_eq!(m.month, Some(2));
-            assert_eq!(m.day, Some(13));
-            assert_eq!(m.separator, Some(sep.to_string()));
+            let p = if let MatchPattern::Date(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.year, 1921);
+            assert_eq!(p.month, 2);
+            assert_eq!(p.day, 13);
+            assert_eq!(p.separator, sep.to_string());
         }
     }
 
@@ -1336,10 +1439,15 @@ mod tests {
         let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, password.len() - 1);
-        assert_eq!(m.year, Some(time::now_utc().tm_year as i16 + 1900));
-        assert_eq!(m.month, Some(11));
-        assert_eq!(m.day, Some(15));
-        assert_eq!(m.separator, Some("".to_string()));
+        let p = if let MatchPattern::Date(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.year, time::now_utc().tm_year as i16 + 1900);
+        assert_eq!(p.month, 11);
+        assert_eq!(p.day, 15);
+        assert_eq!(p.separator, "".to_string());
     }
 
     #[test]
@@ -1351,8 +1459,13 @@ mod tests {
             let m = matches.iter().find(|m| m.token == password).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, password.len() - 1);
-            assert_eq!(m.year, Some(year));
-            assert_eq!(m.separator, Some("".to_string()));
+            let p = if let MatchPattern::Date(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.year, year);
+            assert_eq!(p.separator, "".to_string());
         }
         for &(day, month, year) in &test_data {
             let password = format!("{}.{}.{}", year, month, day);
@@ -1360,8 +1473,13 @@ mod tests {
             let m = matches.iter().find(|m| m.token == password).unwrap();
             assert_eq!(m.i, 0);
             assert_eq!(m.j, password.len() - 1);
-            assert_eq!(m.year, Some(year));
-            assert_eq!(m.separator, Some(".".to_string()));
+            let p = if let MatchPattern::Date(ref p) = m.pattern {
+                p
+            } else {
+                panic!("Wrong match pattern")
+            };
+            assert_eq!(p.year, year);
+            assert_eq!(p.separator, ".".to_string());
         }
     }
 
@@ -1372,10 +1490,15 @@ mod tests {
         let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, password.len() - 1);
-        assert_eq!(m.year, Some(2002));
-        assert_eq!(m.month, Some(2));
-        assert_eq!(m.day, Some(2));
-        assert_eq!(m.separator, Some("/".to_string()));
+        let p = if let MatchPattern::Date(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.year, 2002);
+        assert_eq!(p.month, 2);
+        assert_eq!(p.day, 2);
+        assert_eq!(p.separator, "/".to_string());
     }
 
     #[test]
@@ -1385,10 +1508,15 @@ mod tests {
         let m = matches.iter().find(|m| &m.token == "1/1/91").unwrap();
         assert_eq!(m.i, 1);
         assert_eq!(m.j, password.len() - 2);
-        assert_eq!(m.year, Some(1991));
-        assert_eq!(m.month, Some(1));
-        assert_eq!(m.day, Some(1));
-        assert_eq!(m.separator, Some("/".to_string()));
+        let p = if let MatchPattern::Date(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.year, 1991);
+        assert_eq!(p.month, 1);
+        assert_eq!(p.day, 1);
+        assert_eq!(p.separator, "/".to_string());
     }
 
     #[test]
@@ -1398,17 +1526,27 @@ mod tests {
         let m = matches.iter().find(|m| &m.token == "12/20/1991").unwrap();
         assert_eq!(m.i, 0);
         assert_eq!(m.j, 9);
-        assert_eq!(m.year, Some(1991));
-        assert_eq!(m.month, Some(12));
-        assert_eq!(m.day, Some(20));
-        assert_eq!(m.separator, Some("/".to_string()));
+        let p = if let MatchPattern::Date(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.year, 1991);
+        assert_eq!(p.month, 12);
+        assert_eq!(p.day, 20);
+        assert_eq!(p.separator, "/".to_string());
         let m = matches.iter().find(|m| &m.token == "1991.12.20").unwrap();
         assert_eq!(m.i, 6);
         assert_eq!(m.j, password.len() - 1);
-        assert_eq!(m.year, Some(1991));
-        assert_eq!(m.month, Some(12));
-        assert_eq!(m.day, Some(20));
-        assert_eq!(m.separator, Some(".".to_string()));
+        let p = if let MatchPattern::Date(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.year, 1991);
+        assert_eq!(p.month, 12);
+        assert_eq!(p.day, 20);
+        assert_eq!(p.separator, ".".to_string());
     }
 
     #[test]
@@ -1418,10 +1556,15 @@ mod tests {
         let m = matches.iter().find(|m| &m.token == "12/20/91").unwrap();
         assert_eq!(m.i, 1);
         assert_eq!(m.j, password.len() - 2);
-        assert_eq!(m.year, Some(1991));
-        assert_eq!(m.month, Some(12));
-        assert_eq!(m.day, Some(20));
-        assert_eq!(m.separator, Some("/".to_string()));
+        let p = if let MatchPattern::Date(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.year, 1991);
+        assert_eq!(p.month, 12);
+        assert_eq!(p.day, 20);
+        assert_eq!(p.separator, "/".to_string());
     }
 
     #[test]
@@ -1439,7 +1582,7 @@ mod tests {
             assert!(
                 matches
                     .iter()
-                    .any(|m| m.pattern == pattern_name && m.i == i && m.j == j)
+                    .any(|m| m.pattern.variant() == pattern_name && m.i == i && m.j == j)
             );
         }
     }
