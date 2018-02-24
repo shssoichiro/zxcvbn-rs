@@ -1,3 +1,7 @@
+**Version 0.8.0**
+ - [SEMVER_MINOR] Add support for UTF-8 strings (https://github.com/shssoichiro/zxcvbn-rs/issues/4)
+ - [SEMVER_MAJOR] Remove the `ZxcvbnError::NonAsciiPassword` variant, since this error can no longer occur
+
 **Version 0.7.0**
  - [SEMVER_MAJOR] Refactor `Match` to use an enum internally, to avoid cluttering the struct with several `Option` types (https://github.com/shssoichiro/zxcvbn-rs/issues/19)
  - Make `Match` public (https://github.com/shssoichiro/zxcvbn-rs/issues/17)

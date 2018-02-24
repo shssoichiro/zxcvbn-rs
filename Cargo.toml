@@ -38,3 +38,6 @@ default = []
 dev = ["clippy", "unstable"]
 ser = ["serde", "serde_derive"]
 unstable = ["regex/simd-accel", "lazy_static/nightly"]
+
+[profile.test]
+opt-level = 2

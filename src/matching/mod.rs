@@ -153,8 +153,8 @@ impl Matcher for ReverseDictionaryMatch {
                     pattern.reversed = true;
                 }
                 let old_i = m.i;
-                m.i = password.len() - 1 - m.j;
-                m.j = password.len() - 1 - old_i;
+                m.i = password.chars().count() - 1 - m.j;
+                m.j = password.chars().count() - 1 - old_i;
                 m
             })
             .collect()
@@ -395,6 +395,12 @@ struct RepeatMatch {}
 
 impl Matcher for RepeatMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
+        if !password.is_ascii() {
+            // FancyRegex doesn't play well with multibyte UTF-8 characters and causes panics.
+            // Skip this matcher until a workaround is found.
+            return Vec::new();
+        }
+
         lazy_static! {
             static ref GREEDY_REGEX: FancyRegex = FancyRegex::new(r"(.+)\1+").unwrap();
             static ref LAZY_REGEX: FancyRegex = FancyRegex::new(r"(.+?)\1+").unwrap();
@@ -452,7 +458,7 @@ impl Matcher for RepeatMatch {
             let base_guesses = base_analysis.guesses;
             let pattern = MatchPattern::Repeat(
                 RepeatPatternBuilder::default()
-                    .repeat_count(m4tch.at(0).unwrap().len() / base_token.len())
+                    .repeat_count(m4tch.at(0).unwrap().chars().count() / base_token.chars().count())
                     .base_token(base_token)
                     .base_guesses(base_guesses)
                     .base_matches(base_matches)
@@ -540,8 +546,8 @@ impl Matcher for SequenceMatch {
         let mut last_delta = 0;
 
         for k in 1..password_len {
-            let delta = password[k..(k + 1)].chars().next().unwrap() as i32
-                - password[(k - 1)..k].chars().next().unwrap() as i32;
+            let delta = password.chars().nth(k).unwrap() as i32
+                - password.chars().nth(k - 1).unwrap() as i32;
             if last_delta == 0 {
                 last_delta = delta;
             }
@@ -640,12 +646,17 @@ impl Matcher for DateMatch {
                     continue;
                 }
                 let mut candidates = Vec::new();
-                // Safe to use slice manipulation because dates are guaranteed to be ASCII
-                for &(k, l) in &DATE_SPLITS[&token.len()] {
+                for &(k, l) in &DATE_SPLITS[&token.chars().count()] {
                     let ymd = map_ints_to_ymd(
-                        token[0..k].parse().unwrap(),
-                        token[k..l].parse().unwrap(),
-                        token[l..].parse().unwrap(),
+                        token.chars().take(k).collect::<String>().parse().unwrap(),
+                        token
+                            .chars()
+                            .take(l)
+                            .skip(k)
+                            .collect::<String>()
+                            .parse()
+                            .unwrap(),
+                        token.chars().skip(l).collect::<String>().parse().unwrap(),
                     );
                     if ymd.is_some() {
                         candidates.push(ymd.unwrap());

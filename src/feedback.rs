@@ -31,7 +31,10 @@ pub fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
         return None;
     }
 
-    let longest_match = sequence.iter().max_by_key(|x| x.token.len()).unwrap();
+    let longest_match = sequence
+        .iter()
+        .max_by_key(|x| x.token.chars().count())
+        .unwrap();
     let mut feedback = get_match_feedback(longest_match, sequence.len() == 1);
     let extra_feedback = "Add another word or two. Uncommon words are better.";
 
@@ -53,7 +56,7 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
             suggestions: vec!["Use a longer keyboard pattern with more turns."],
         },
         MatchPattern::Repeat(ref pattern) => Feedback {
-            warning: Some(if pattern.base_token.len() == 1 {
+            warning: Some(if pattern.base_token.chars().count() == 1 {
                 "Repeats like \"aaa\" are easy to guess."
             } else {
                 "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
@@ -133,7 +136,7 @@ fn get_dictionary_match_feedback(
         suggestions.push("All-uppercase is almost as easy to guess as all-lowercase.");
     }
 
-    if pattern.reversed && word.len() >= 4 {
+    if pattern.reversed && word.chars().count() >= 4 {
         suggestions.push("Reversed words aren't much harder to guess.");
     }
     if pattern.l33t {

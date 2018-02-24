@@ -77,10 +77,6 @@ quick_error! {
         BlankPassword {
             description("Zxcvbn cannot evaluate a blank password")
         }
-        /// Indicates that the password contained non-ASCII characters
-        NonAsciiPassword {
-            description("Zxcvbn can only evaluate ASCII passwords; this feature may be added in the future")
-        }
     }
 }
 
@@ -95,10 +91,6 @@ quick_error! {
 pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnError> {
     if password.is_empty() {
         return Err(ZxcvbnError::BlankPassword);
-    }
-
-    if !password.is_ascii() {
-        return Err(ZxcvbnError::NonAsciiPassword);
     }
 
     let start_time_ns = time::precise_time_ns();
@@ -154,6 +146,20 @@ mod tests {
         assert_eq!(entropy.score, 4);
         assert!(!entropy.sequence.is_empty());
         assert!(entropy.feedback.is_none());
+    }
+
+    #[test]
+    fn test_zxcvbn_unicode() {
+        let password = "𐰊𐰂𐰄𐰀𐰁";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.score, 1);
+    }
+
+    #[test]
+    fn test_zxcvbn_unicode_2() {
+        let password = "r0sebudmaelstrom丂/20/91aaaa";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.score, 4);
     }
 
     #[test]
