@@ -6,7 +6,11 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "0.7.0"
+version = "1.0.0"
+
+[badges]
+travis-ci = { repository = "shssoichiro/zxcvbn-rs", branch = "master" }
+maintenance = { status = "passively-maintained" }
 
 [dependencies]
 derive_builder = "0.5.0"

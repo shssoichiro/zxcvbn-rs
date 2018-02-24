@@ -1,4 +1,4 @@
-**Version 0.8.0**
+**Version 1.0.0**
  - [SEMVER_MINOR] Add support for UTF-8 strings (https://github.com/shssoichiro/zxcvbn-rs/issues/4)
  - [SEMVER_MAJOR] Remove the `ZxcvbnError::NonAsciiPassword` variant, since this error can no longer occur
 

@@ -13,7 +13,7 @@ This library is a Rust port of Dropbox's `zxcvbn` Javascript library. The follow
 Consider using zxcvbn as an algorithmic alternative to password composition policy — it is more secure, flexible, and usable when sites require a minimal complexity score in place of annoying rules like "passwords must contain three of {lower, upper, numbers, symbols}".
 
 * __More secure__: policies often fail both ways, allowing weak passwords (`P@ssword1`) and disallowing strong passwords.
-* __More flexible__: zxcvbn allows many password styles to flourish so long as it detects sufficient complexity — passphrases are rated highly given enough uncommon words, keyboard patterns are ranked based on length and number of turns, and capitalization adds more complexity when it's unpredictaBle.
+* __More flexible__: zxcvbn allows many password styles to flourish so long as it detects sufficient complexity — passphrases are rated highly given enough uncommon words, keyboard patterns are ranked based on length and number of turns, and capitalization adds more complexity when it's unpredictable.
 * __More usable__: zxcvbn is designed to power simple, rule-free interfaces that give instant feedback. In addition to strength estimation, zxcvbn includes minimal, targeted verbal feedback that can help guide users towards less guessable passwords.
 
 ## Installing
@@ -22,7 +22,7 @@ Consider using zxcvbn as an algorithmic alternative to password composition poli
 
 ```toml
 [dependencies]
-zxcvbn = "0.7.0"
+zxcvbn = "1.0.0"
 ```
 
 If your project will only be built against the nightly Rust compiler, you can add the `unstable` feature flag to enable
@@ -30,7 +30,7 @@ some nightly-exclusive features such as SIMD which may improve performance.
 
 ```toml
 [dependencies]
-zxcvbn = { version = "0.7.0", features = ["unstable"] }
+zxcvbn = { version = "1.0.0", features = ["unstable"] }
 ```
 
 Likewise, zxcvbn has a "ser" feature flag if you require serialization support via `serde`.
