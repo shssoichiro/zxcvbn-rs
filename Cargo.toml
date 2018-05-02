@@ -6,7 +6,7 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "1.0.0"
+version = "1.0.1"
 
 [badges]
 travis-ci = { repository = "shssoichiro/zxcvbn-rs", branch = "master" }
@@ -18,7 +18,7 @@ fancy-regex = "0.1.0"
 itertools = "0.7.0"
 lazy_static = "1.0.0"
 quick-error = "1.2.0"
-regex = "0.2.0"
+regex = "1.0.0"
 time = "0.1.35"
 
 [dependencies.clippy]
@@ -41,7 +41,7 @@ serde_json = "1.0.0"
 default = []
 dev = ["clippy", "unstable"]
 ser = ["serde", "serde_derive"]
-unstable = ["regex/simd-accel", "lazy_static/nightly"]
+unstable = ["lazy_static/nightly"]
 
 [profile.test]
 opt-level = 2
