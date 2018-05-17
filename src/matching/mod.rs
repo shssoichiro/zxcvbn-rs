@@ -19,6 +19,7 @@ pub struct Match {
     /// Token that has been matched.
     pub token: String,
     /// Pattern type and details used to detect this match.
+    #[cfg_attr(feature = "ser", serde(flatten))]
     pub pattern: MatchPattern,
     /// Estimated number of tries for guessing the match.
     pub guesses: Option<u64>,
@@ -197,7 +198,7 @@ impl Matcher for L33tMatch {
                         match_sub
                             .iter()
                             .map(|(k, v)| format!("{} -> {}", k, v))
-                            .collect(),
+                            .join(", "),
                     );
                     pattern.sub = Some(match_sub);
                 }
