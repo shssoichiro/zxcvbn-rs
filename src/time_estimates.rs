@@ -9,16 +9,16 @@ pub struct CrackTimes {
     pub online_throttling_100_per_hour: u64,
     /// Online attack on a service that doesn't rate-limit,
     /// or where an attacker has outsmarted rate-limiting.
-    pub online_no_throttling_10_per_second: u64,
+    pub online_no_throttling_10_per_second: f64,
     /// Offline attack, assumes multiple attackers.
     /// Proper user-unique salting, and a slow hash function
     /// such as bcrypt, scrypt, PBKDF2.
-    pub offline_slow_hashing_1e4_per_second: u64,
+    pub offline_slow_hashing_1e4_per_second: f64,
     /// Offline attack with user-unique salting but a fast hash function
     /// such as SHA-1, SHA-256, or MD5. A wide range of reasonable numbers
     /// anywhere from one billion to one trillion guesses per second,
     /// depending on number of cores and machines, ballparking at 10 billion per second.
-    pub offline_fast_hashing_1e10_per_second: u64,
+    pub offline_fast_hashing_1e10_per_second: f64,
 }
 
 /// Back-of-the-envelope crack time estimations, in a human-readable format,
@@ -44,24 +44,25 @@ pub struct CrackTimesDisplay {
 
 #[doc(hidden)]
 pub fn estimate_attack_times(guesses: u64) -> (CrackTimes, CrackTimesDisplay, u8) {
+    let guesses_f64 = guesses as f64;
     let crack_times_seconds = CrackTimes {
         online_throttling_100_per_hour: guesses.saturating_mul(36),
-        online_no_throttling_10_per_second: guesses / 10,
-        offline_slow_hashing_1e4_per_second: guesses / 10_000,
-        offline_fast_hashing_1e10_per_second: guesses / 10_000_000_000,
+        online_no_throttling_10_per_second: guesses_f64 / 10.00,
+        offline_slow_hashing_1e4_per_second: guesses_f64 / 10_000.00,
+        offline_fast_hashing_1e10_per_second: guesses_f64 / 10_000_000_000.00,
     };
     let crack_times_display = CrackTimesDisplay {
         online_throttling_100_per_hour: display_time(
-            crack_times_seconds.online_throttling_100_per_hour,
+            crack_times_seconds.online_throttling_100_per_hour as u64,
         ),
         online_no_throttling_10_per_second: display_time(
-            crack_times_seconds.online_no_throttling_10_per_second,
+            crack_times_seconds.online_no_throttling_10_per_second as u64,
         ),
         offline_slow_hashing_1e4_per_second: display_time(
-            crack_times_seconds.offline_slow_hashing_1e4_per_second,
+            crack_times_seconds.offline_slow_hashing_1e4_per_second as u64,
         ),
         offline_fast_hashing_1e10_per_second: display_time(
-            crack_times_seconds.offline_fast_hashing_1e10_per_second,
+            crack_times_seconds.offline_fast_hashing_1e10_per_second as u64,
         ),
     };
     (

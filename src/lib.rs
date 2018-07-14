@@ -34,6 +34,8 @@ extern crate time;
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
+#[cfg(test)]
+extern crate serde_json;
 
 pub use matching::Match;
 
@@ -52,7 +54,7 @@ pub struct Entropy {
     /// Estimated guesses needed to crack the password
     pub guesses: u64,
     /// Order of magnitude of `guesses`
-    pub guesses_log10: u16,
+    pub guesses_log10: f64,
     /// List of back-of-the-envelope crack time estimations, in seconds, based on a few scenarios
     pub crack_times_seconds: time_estimates::CrackTimes,
     /// Same keys as `crack_time_seconds`, with human-readable display values,
@@ -135,6 +137,13 @@ mod tests {
             zxcvbn(&password, &inputs).ok();
             TestResult::from_bool(true)
         }
+
+        #[cfg(feature = "ser")]
+        fn test_zxcvbn_serialisation_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
+            let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
+            serde_json::to_string(&zxcvbn(&password, &inputs).ok()).ok();
+            TestResult::from_bool(true)
+        }
     }
 
     #[test]
@@ -142,7 +151,7 @@ mod tests {
         let password = "r0sebudmaelstrom11/20/91aaaa";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 473_471_216_704_000);
-        assert_eq!(entropy.guesses_log10, 14);
+        assert_eq!(entropy.guesses_log10 as u16, 14);
         assert_eq!(entropy.score, 4);
         assert!(!entropy.sequence.is_empty());
         assert!(entropy.feedback.is_none());
@@ -174,7 +183,7 @@ mod tests {
         let password = "TestMeNow!";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 372_010_000);
-        assert_eq!(entropy.guesses_log10, 8);
+        assert_eq!(entropy.guesses_log10, 8.57055461430783);
         assert_eq!(entropy.score, 3);
     }
 
@@ -183,7 +192,7 @@ mod tests {
         let password = "hey<123";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 1_010_000);
-        assert_eq!(entropy.guesses_log10, 6);
+        assert_eq!(entropy.guesses_log10, 6.004321373782642);
         assert_eq!(entropy.score, 2);
     }
 }

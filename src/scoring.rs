@@ -10,7 +10,7 @@ pub struct GuessCalculation {
     /// Estimated guesses needed to crack the password
     pub guesses: u64,
     /// Order of magnitude of `guesses`
-    pub guesses_log10: u16,
+    pub guesses_log10: f64,
     /// The list of patterns the guess calculation was based on
     pub sequence: Vec<Match>,
 }
@@ -196,7 +196,7 @@ pub fn most_guessable_match_sequence(
 
     GuessCalculation {
         guesses: guesses as u64,
-        guesses_log10: (guesses as f64).log10() as u16,
+        guesses_log10: (guesses as f64).log10(),
         sequence: optimal_match_sequence,
     }
 }
