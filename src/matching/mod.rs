@@ -64,7 +64,7 @@ lazy_static! {
     };
 }
 
-trait Matcher: Sync {
+trait Matcher: Send + Sync {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match>;
 }
 
