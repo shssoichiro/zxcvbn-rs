@@ -1,5 +1,5 @@
 language: rust
-script: cargo test --features "ser"
+script: cargo test --all-features
 
 matrix:
   include:

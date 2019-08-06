@@ -10,12 +10,54 @@ const MALE_NAMES: &str = "james,john,robert,michael,william,david,richard,charle
 lazy_static! {
     pub static ref RANKED_DICTIONARIES: HashMap<&'static str, HashMap<&'static str, usize>> = {
         let mut dicts = HashMap::with_capacity(6);
-        dicts.insert("passwords", PASSWORDS.split(',').enumerate().map(|(i, x)| (x, i + 1)).collect());
-        dicts.insert("english", ENGLISH_WIKI.split(',').enumerate().map(|(i, x)| (x, i + 1)).collect());
-        dicts.insert("female_names", FEMALE_NAMES.split(',').enumerate().map(|(i, x)| (x, i + 1)).collect());
-        dicts.insert("male_names", MALE_NAMES.split(',').enumerate().map(|(i, x)| (x, i + 1)).collect());
-        dicts.insert("surnames", SURNAMES.split(',').enumerate().map(|(i, x)| (x, i + 1)).collect());
-        dicts.insert("us_tv_and_film", US_TV_AND_FILM.split(',').enumerate().map(|(i, x)| (x, i + 1)).collect());
+        dicts.insert(
+            "passwords",
+            PASSWORDS
+                .split(',')
+                .enumerate()
+                .map(|(i, x)| (x, i + 1))
+                .collect(),
+        );
+        dicts.insert(
+            "english",
+            ENGLISH_WIKI
+                .split(',')
+                .enumerate()
+                .map(|(i, x)| (x, i + 1))
+                .collect(),
+        );
+        dicts.insert(
+            "female_names",
+            FEMALE_NAMES
+                .split(',')
+                .enumerate()
+                .map(|(i, x)| (x, i + 1))
+                .collect(),
+        );
+        dicts.insert(
+            "male_names",
+            MALE_NAMES
+                .split(',')
+                .enumerate()
+                .map(|(i, x)| (x, i + 1))
+                .collect(),
+        );
+        dicts.insert(
+            "surnames",
+            SURNAMES
+                .split(',')
+                .enumerate()
+                .map(|(i, x)| (x, i + 1))
+                .collect(),
+        );
+        dicts.insert(
+            "us_tv_and_film",
+            US_TV_AND_FILM
+                .split(',')
+                .enumerate()
+                .map(|(i, x)| (x, i + 1))
+                .collect(),
+        );
         dicts
     };
 }

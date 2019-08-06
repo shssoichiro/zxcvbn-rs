@@ -1,11 +1,11 @@
-use std::collections::HashMap;
 use matching::Match;
+use std::collections::HashMap;
 
 /// Pattern type used to detect a match
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
-#[cfg_attr(feature = "ser", serde(tag="pattern"))]
-#[cfg_attr(feature = "ser", serde(rename_all="lowercase"))]
+#[cfg_attr(feature = "ser", serde(tag = "pattern"))]
+#[cfg_attr(feature = "ser", serde(rename_all = "lowercase"))]
 pub enum MatchPattern {
     /// A match based on a word in a dictionary
     Dictionary(DictionaryPattern),

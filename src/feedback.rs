@@ -1,8 +1,8 @@
 //! Contains structs and methods related to generating feedback strings
 //! for providing help for the user to generate stronger passwords.
 
-use matching::Match;
 use matching::patterns::*;
+use matching::Match;
 
 /// Verbal feedback to help choose better passwords
 #[derive(Debug, Clone, Default)]
@@ -144,7 +144,7 @@ fn get_dictionary_match_feedback(
     }
 
     Feedback {
-        warning: warning,
-        suggestions: suggestions,
+        warning,
+        suggestions,
     }
 }

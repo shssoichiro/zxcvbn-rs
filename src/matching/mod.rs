@@ -1,11 +1,11 @@
 /// Defines potential patterns used to match against a password
 pub mod patterns;
 
+use self::patterns::*;
 use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
 use regex::Regex;
 use std::collections::HashMap;
-use self::patterns::*;
 
 /// A match of a predictable pattern in the password.
 #[derive(Debug, Clone, PartialEq, Default, Builder)]
@@ -25,7 +25,7 @@ pub struct Match {
     pub guesses: Option<u64>,
 }
 
-#[cfg_attr(feature = "clippy", allow(implicit_hasher))]
+#[allow(clippy::implicit_hasher)]
 #[doc(hidden)]
 pub fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
     let mut matches: Vec<Match> = MATCHERS
@@ -188,7 +188,8 @@ impl Matcher for L33tMatch {
                         // Only return the matches that contain an actual substitution
                         continue;
                     }
-                    let match_sub: HashMap<char, char> = sub.clone()
+                    let match_sub: HashMap<char, char> = sub
+                        .clone()
                         .into_iter()
                         .filter(|&(subbed_chr, _)| token.contains(subbed_chr))
                         .collect();
@@ -223,7 +224,8 @@ fn relevant_l33t_subtable(password: &str) -> HashMap<char, Vec<char>> {
     let password_chars: Vec<char> = password.chars().collect();
     let mut subtable: HashMap<char, Vec<char>> = HashMap::new();
     for (letter, subs) in L33T_TABLE.iter() {
-        let relevant_subs: Vec<char> = subs.iter()
+        let relevant_subs: Vec<char> = subs
+            .iter()
             .filter(|&x| password_chars.contains(x))
             .cloned()
             .collect();
@@ -282,9 +284,10 @@ fn enumerate_l33t_replacements(table: &HashMap<char, Vec<char>>) -> Vec<HashMap<
         table,
         vec![vec![]],
         table.keys().cloned().collect::<Vec<char>>().as_slice(),
-    ).into_iter()
-        .map(|sub| sub.into_iter().collect::<HashMap<char, char>>())
-        .collect()
+    )
+    .into_iter()
+    .map(|sub| sub.into_iter().collect::<HashMap<char, char>>())
+    .collect()
 }
 
 struct SpatialMatch {}
@@ -875,8 +878,8 @@ lazy_static! {
 #[cfg(test)]
 mod tests {
     use matching;
-    use matching::Matcher;
     use matching::patterns::*;
+    use matching::Matcher;
     use std::collections::HashMap;
     use time;
 
@@ -1029,8 +1032,9 @@ mod tests {
                     ('c', vec!['(', '{']),
                     ('g', vec!['6']),
                     ('o', vec!['0']),
-                ].into_iter()
-                    .collect(),
+                ]
+                .into_iter()
+                .collect(),
             ),
         ];
         for (pw, expected) in test_data {
@@ -1591,11 +1595,9 @@ mod tests {
         ];
         let matches = matching::omnimatch(password, &HashMap::new());
         for &(pattern_name, i, j) in &expected {
-            assert!(
-                matches
-                    .iter()
-                    .any(|m| m.pattern.variant() == pattern_name && m.i == i && m.j == j)
-            );
+            assert!(matches
+                .iter()
+                .any(|m| m.pattern.variant() == pattern_name && m.i == i && m.j == j));
         }
     }
 }

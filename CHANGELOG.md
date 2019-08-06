@@ -1,3 +1,10 @@
+**Version 1.0.2**
+ - Fix building on Rust 1.36.0 (https://github.com/shssoichiro/zxcvbn-rs/pull/21)
+ - Cleanup development profiles which are no longer needed
+ - Remove built-in clippy and prefer using clippy from rustup
+ - Upgrade `itertools` to 0.8
+ - Upgrade `derive_builder` to 0.7
+
 **Version 1.0.1**
  - Upgrade `regex` to 1.0
 

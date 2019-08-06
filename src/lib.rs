@@ -10,8 +10,6 @@
 //! it is more secure, flexible, and usable when sites require
 //! a minimal complexity score in place of annoying rules like
 //! "passwords must contain three of {lower, upper, numbers, symbols}".
-#![cfg_attr(feature = "clippy", feature(plugin))]
-#![cfg_attr(feature = "clippy", plugin(clippy))]
 #![recursion_limit = "128"]
 #![warn(missing_docs)]
 
@@ -119,10 +117,10 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         guesses_log10: result.guesses_log10,
         crack_times_seconds: attack_times,
         crack_times_display: attack_times_display,
-        score: score,
-        feedback: feedback,
+        score,
+        feedback,
         sequence: result.sequence,
-        calc_time: calc_time,
+        calc_time,
     })
 }
 

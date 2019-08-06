@@ -1,8 +1,8 @@
-use std::collections::HashMap;
-use std::cmp;
-use time;
-use matching::{Match, MatchBuilder};
 use matching::patterns::*;
+use matching::{Match, MatchBuilder};
+use std::cmp;
+use std::collections::HashMap;
+use time;
 
 #[derive(Debug, Clone)]
 #[doc(hidden)]
@@ -114,7 +114,7 @@ pub fn most_guessable_match_sequence(
         // see if a single bruteforce match spanning the k-prefix is optimal.
         let m = make_bruteforce_match(0, k, password);
         update(m, 1, password, optimal, exclude_additive);
-        for i in 1..(k + 1) {
+        for i in 1..=k {
             // generate k bruteforce matches, spanning from (i=1, j=k) up to (i=k, j=k).
             // see if adding these new matches to any of the sequences in optimal[i-1]
             // leads to new bests.
@@ -146,7 +146,7 @@ pub fn most_guessable_match_sequence(
 
     /// helper: step backwards through optimal.m starting at the end,
     /// constructing the final optimal match sequence.
-    #[cfg_attr(feature = "clippy", allow(many_single_char_names))]
+    #[allow(clippy::many_single_char_names)]
     fn unwind(n: usize, optimal: &mut Optimal) -> Vec<Match> {
         let mut optimal_match_sequence = Vec::new();
         let mut k = n - 1;
@@ -202,7 +202,7 @@ pub fn most_guessable_match_sequence(
 }
 
 fn factorial(n: usize) -> usize {
-    (1..(n + 1)).product()
+    (1..=n).product()
 }
 
 fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
@@ -241,7 +241,7 @@ impl Estimator for MatchPattern {
                 let mut guesses = BRUTEFORCE_CARDINALITY;
                 let token_len = token.chars().count();
                 if token_len >= 2 {
-                    for _ in 2..(token_len + 1) {
+                    for _ in 2..=token_len {
                         guesses = guesses.saturating_mul(BRUTEFORCE_CARDINALITY);
                     }
                 }
@@ -265,11 +265,10 @@ impl Estimator for DictionaryPattern {
         self.base_guesses = self.rank as u64;
         self.uppercase_variations = uppercase_variations;
         self.l33t_variations = l33t_variations;
-        self.base_guesses * self.uppercase_variations * self.l33t_variations * if self.reversed {
-            2
-        } else {
-            1
-        }
+        self.base_guesses
+            * self.uppercase_variations
+            * self.l33t_variations
+            * if self.reversed { 2 } else { 1 }
     }
 }
 
@@ -292,7 +291,7 @@ fn uppercase_variations(token: &str) -> u64 {
     // the number of ways to lowercase U+L letters with L lowercase letters or less.
     let upper = token.chars().filter(|c| c.is_uppercase()).count();
     let lower = token.chars().filter(|c| c.is_lowercase()).count();
-    (1..(cmp::min(upper, lower) + 1))
+    (1..=cmp::min(upper, lower))
         .map(|i| n_ck(upper + lower, i))
         .sum()
 }
@@ -316,7 +315,7 @@ fn l33t_variations(pattern: &DictionaryPattern, token: &str) -> u64 {
             // this case is similar to capitalization:
             // with aa44a, U = 3, S = 2, attacker needs to try unsubbed + one sub + two subs
             let p = cmp::min(unsubbed, subbed);
-            let possibilities: u64 = (1..(p + 1)).map(|i| n_ck(unsubbed + subbed, i)).sum();
+            let possibilities: u64 = (1..=p).map(|i| n_ck(unsubbed + subbed, i)).sum();
             variations *= possibilities;
         }
     }
@@ -332,7 +331,7 @@ fn n_ck(n: usize, k: usize) -> u64 {
     } else {
         let mut r: usize = 1;
         let mut n = n;
-        for d in 1..(k + 1) {
+        for d in 1..=k {
             r = r.saturating_mul(n);
             r /= d;
             n -= 1;
@@ -351,9 +350,9 @@ impl Estimator for SpatialPattern {
         let mut guesses = 0;
         let len = token.chars().count();
         // estimate the number of possible patterns w/ length L or less with t turns or less.
-        for i in 2..(len + 1) {
+        for i in 2..=len {
             let possible_turns = cmp::min(self.turns, i - 1);
-            for j in 1..(possible_turns + 1) {
+            for j in 1..=possible_turns {
                 guesses += n_ck(i - 1, j - 1) * starts as u64 * degree.pow(j as u32) as u64;
             }
         }
@@ -365,8 +364,7 @@ impl Estimator for SpatialPattern {
             if unshifted_count == 0 {
                 guesses *= 2;
             } else {
-                let shifted_variations: u64 = (1..(cmp::min(shifted_count, unshifted_count) + 1))
-                    .into_iter()
+                let shifted_variations: u64 = (1..=cmp::min(shifted_count, unshifted_count))
                     .map(|i| n_ck(shifted_count + unshifted_count, i))
                     .sum();
                 guesses *= shifted_variations;
@@ -465,11 +463,11 @@ impl Estimator for DatePattern {
 
 #[cfg(test)]
 mod tests {
-    use scoring;
-    use matching::MatchBuilder;
     use matching::patterns::*;
-    use scoring::Estimator;
+    use matching::MatchBuilder;
     use quickcheck::TestResult;
+    use scoring;
+    use scoring::Estimator;
     use std::collections::HashMap;
 
     #[test]
@@ -751,7 +749,8 @@ mod tests {
                 base_token,
                 &::matching::omnimatch(base_token, &HashMap::new()),
                 false,
-            ).guesses;
+            )
+            .guesses;
             let mut p = RepeatPatternBuilder::default()
                 .base_token(base_token.to_string())
                 .base_guesses(base_guesses)
@@ -858,7 +857,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
+    #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_no_turns_or_shifts() {
         let mut p = SpatialPatternBuilder::default()
             .graph("qwerty".to_string())
@@ -867,13 +866,14 @@ mod tests {
             .build()
             .unwrap();
         let token = "zxcvbn";
-        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS * *scoring::KEYBOARD_AVERAGE_DEGREE
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
+            * *scoring::KEYBOARD_AVERAGE_DEGREE
             * (token.len() - 1);
         assert_eq!(p.estimate(token), base_guesses as u64);
     }
 
     #[test]
-    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
+    #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_adds_for_shifted_keys() {
         let mut p = SpatialPatternBuilder::default()
             .graph("qwerty".to_string())
@@ -883,13 +883,14 @@ mod tests {
             .unwrap();
         let token = "ZxCvbn";
         let base_guesses = (*scoring::KEYBOARD_STARTING_POSITIONS
-            * *scoring::KEYBOARD_AVERAGE_DEGREE * (token.len() - 1))
-            as u64 * (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
+            * *scoring::KEYBOARD_AVERAGE_DEGREE
+            * (token.len() - 1)) as u64
+            * (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
         assert_eq!(p.estimate(token), base_guesses);
     }
 
     #[test]
-    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
+    #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_doubles_when_all_shifted() {
         let mut p = SpatialPatternBuilder::default()
             .graph("qwerty".to_string())
@@ -898,13 +899,15 @@ mod tests {
             .build()
             .unwrap();
         let token = "ZXCVBN";
-        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS * *scoring::KEYBOARD_AVERAGE_DEGREE
-            * (token.len() - 1) * 2;
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
+            * *scoring::KEYBOARD_AVERAGE_DEGREE
+            * (token.len() - 1)
+            * 2;
         assert_eq!(p.estimate(token), base_guesses as u64);
     }
 
     #[test]
-    #[cfg_attr(feature = "clippy", allow(clone_on_copy))]
+    #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_accounts_for_turn_positions_directions_and_start_keys() {
         let mut p = SpatialPatternBuilder::default()
             .graph("qwerty".to_string())
