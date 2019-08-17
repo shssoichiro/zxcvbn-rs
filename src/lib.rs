@@ -15,25 +15,24 @@
 
 #[macro_use]
 extern crate derive_builder;
-extern crate fancy_regex;
-extern crate itertools;
+
+
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate quick_error;
-extern crate regex;
+
 #[cfg(feature = "ser")]
 extern crate serde;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
-extern crate time;
+use time;
 
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
-#[cfg(test)]
-extern crate serde_json;
+
 
 pub use crate::matching::Match;
 
