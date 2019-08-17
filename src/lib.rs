@@ -50,11 +50,8 @@ pub struct Entropy {
     pub guesses: u64,
     /// Order of magnitude of `guesses`
     pub guesses_log10: f64,
-    /// List of back-of-the-envelope crack time estimations, in seconds, based on a few scenarios
-    pub crack_times_seconds: time_estimates::CrackTimes,
-    /// Same keys as `crack_time_seconds`, with human-readable display values,
-    /// e.g. "less than a second", "3 hours", "centuries", etc.
-    pub crack_times_display: time_estimates::CrackTimesDisplay,
+    /// List of back-of-the-envelope crack time estimations based on a few scenarios.
+    pub crack_times: time_estimates::CrackTimes,
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
     pub score: u8,
@@ -105,15 +102,13 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
     let matches = matching::omnimatch(&password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(&password, &matches, false);
     let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
-    let (attack_times, attack_times_display, score) =
-        time_estimates::estimate_attack_times(result.guesses);
+    let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &matches);
 
     Ok(Entropy {
         guesses: result.guesses,
         guesses_log10: result.guesses_log10,
-        crack_times_seconds: attack_times,
-        crack_times_display: attack_times_display,
+        crack_times,
         score,
         feedback,
         sequence: result.sequence,
