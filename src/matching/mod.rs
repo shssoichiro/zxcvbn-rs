@@ -69,7 +69,7 @@ trait Matcher: Send + Sync {
 }
 
 lazy_static! {
-    static ref MATCHERS: [Box<Matcher>; 8] = [
+    static ref MATCHERS: [Box<dyn Matcher>; 8] = [
         Box::new(DictionaryMatch {}),
         Box::new(ReverseDictionaryMatch {}),
         Box::new(L33tMatch {}),
@@ -877,9 +877,9 @@ lazy_static! {
 
 #[cfg(test)]
 mod tests {
-    use matching;
-    use matching::patterns::*;
-    use matching::Matcher;
+    use crate::matching;
+    use crate::matching::patterns::*;
+    use crate::matching::Matcher;
     use std::collections::HashMap;
     use time;
 
