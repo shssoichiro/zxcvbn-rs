@@ -465,9 +465,9 @@ impl Estimator for DatePattern {
 mod tests {
     use crate::matching::patterns::*;
     use crate::matching::MatchBuilder;
-    use quickcheck::TestResult;
     use crate::scoring;
     use crate::scoring::Estimator;
+    use quickcheck::TestResult;
     use std::collections::HashMap;
 
     #[test]

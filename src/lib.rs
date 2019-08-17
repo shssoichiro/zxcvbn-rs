@@ -16,7 +16,6 @@
 #[macro_use]
 extern crate derive_builder;
 
-
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
@@ -32,7 +31,6 @@ use time;
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
-
 
 pub use crate::matching::Match;
 
