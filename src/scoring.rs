@@ -1,5 +1,5 @@
-use matching::patterns::*;
-use matching::{Match, MatchBuilder};
+use crate::matching::patterns::*;
+use crate::matching::{Match, MatchBuilder};
 use std::cmp;
 use std::collections::HashMap;
 use time;
@@ -42,7 +42,7 @@ const MIN_SUBMATCH_GUESSES_MULTI_CHAR: u64 = 50;
 #[doc(hidden)]
 pub fn most_guessable_match_sequence(
     password: &str,
-    matches: &[::matching::Match],
+    matches: &[crate::matching::Match],
     exclude_additive: bool,
 ) -> GuessCalculation {
     let n = password.chars().count();
@@ -375,11 +375,11 @@ impl Estimator for SpatialPattern {
 }
 
 lazy_static! {
-    static ref KEYBOARD_AVERAGE_DEGREE: usize = calc_average_degree(&::adjacency_graphs::QWERTY);
+    static ref KEYBOARD_AVERAGE_DEGREE: usize = calc_average_degree(&crate::adjacency_graphs::QWERTY);
     // slightly different for keypad/mac keypad, but close enough
-    static ref KEYPAD_AVERAGE_DEGREE: usize = calc_average_degree(&::adjacency_graphs::KEYPAD);
-    static ref KEYBOARD_STARTING_POSITIONS: usize = ::adjacency_graphs::QWERTY.len();
-    static ref KEYPAD_STARTING_POSITIONS: usize = ::adjacency_graphs::KEYPAD.len();
+    static ref KEYPAD_AVERAGE_DEGREE: usize = calc_average_degree(&crate::adjacency_graphs::KEYPAD);
+    static ref KEYBOARD_STARTING_POSITIONS: usize = crate::adjacency_graphs::QWERTY.len();
+    static ref KEYPAD_STARTING_POSITIONS: usize = crate::adjacency_graphs::KEYPAD.len();
 }
 
 fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> usize {
@@ -463,11 +463,11 @@ impl Estimator for DatePattern {
 
 #[cfg(test)]
 mod tests {
-    use matching::patterns::*;
-    use matching::MatchBuilder;
+    use crate::matching::patterns::*;
+    use crate::matching::MatchBuilder;
     use quickcheck::TestResult;
-    use scoring;
-    use scoring::Estimator;
+    use crate::scoring;
+    use crate::scoring::Estimator;
     use std::collections::HashMap;
 
     #[test]
@@ -747,7 +747,7 @@ mod tests {
         for &(token, base_token, repeat_count) in &test_data {
             let base_guesses = scoring::most_guessable_match_sequence(
                 base_token,
-                &::matching::omnimatch(base_token, &HashMap::new()),
+                &crate::matching::omnimatch(base_token, &HashMap::new()),
                 false,
             )
             .guesses;

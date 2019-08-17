@@ -1,4 +1,4 @@
-use matching::Match;
+use crate::matching::Match;
 use std::collections::HashMap;
 
 /// Pattern type used to detect a match

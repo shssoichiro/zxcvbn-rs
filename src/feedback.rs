@@ -1,8 +1,8 @@
 //! Contains structs and methods related to generating feedback strings
 //! for providing help for the user to generate stronger passwords.
 
-use matching::patterns::*;
-use matching::Match;
+use crate::matching::patterns::*;
+use crate::matching::Match;
 
 /// Verbal feedback to help choose better passwords
 #[derive(Debug, Clone, Default)]

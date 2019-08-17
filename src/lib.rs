@@ -35,7 +35,7 @@ extern crate quickcheck;
 #[cfg(test)]
 extern crate serde_json;
 
-pub use matching::Match;
+pub use crate::matching::Match;
 
 mod adjacency_graphs;
 pub mod feedback;
