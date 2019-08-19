@@ -131,7 +131,7 @@ pub struct DatePattern {
     /// Separator of a date that was matched.
     pub separator: String,
     /// Year that was matched.
-    pub year: i16,
+    pub year: i32,
     /// Month that was matched.
     pub month: i8,
     /// Day that was matched.

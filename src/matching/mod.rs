@@ -675,7 +675,7 @@ impl Matcher for DateMatch {
                 //
                 // ie, considering '111504', prefer 11-15-04 to 1-1-1504
                 // (interpreting '04' as 2004)
-                let metric = |candidate: &(i16, i8, i8)| {
+                let metric = |candidate: &(i32, i8, i8)| {
                     (candidate.0 - *super::scoring::REFERENCE_YEAR).abs()
                 };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
@@ -761,7 +761,7 @@ impl Matcher for DateMatch {
 }
 
 /// Takes three ints and returns them in a (y, m, d) tuple
-fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)> {
+fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i32, i8, i8)> {
     // given a 3-tuple, discard if:
     //   middle int is over 31 (for all ymd formats, years are never allowed in the middle)
     //   middle int is zero
@@ -800,7 +800,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)>
         if DATE_MIN_YEAR <= year && year <= DATE_MAX_YEAR {
             let dm = map_ints_to_md(second, third);
             if let Some(dm) = dm {
-                return Some((year as i16, dm.0, dm.1));
+                return Some((i32::from(year), dm.0, dm.1));
             } else {
                 // for a candidate that includes a four-digit year,
                 // when the remaining ints don't match to a day and month,
@@ -816,7 +816,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)>
         let dm = map_ints_to_md(second, third);
         if let Some(dm) = dm {
             let year = two_to_four_digit_year(year);
-            return Some((year as i16, dm.0, dm.1));
+            return Some((i32::from(year), dm.0, dm.1));
         }
     }
 
@@ -881,7 +881,6 @@ mod tests {
     use crate::matching::patterns::*;
     use crate::matching::Matcher;
     use std::collections::HashMap;
-    use time;
 
     #[test]
     fn test_translate() {
@@ -1450,7 +1449,8 @@ mod tests {
 
     #[test]
     fn test_date_matches_year_closest_to_reference_year() {
-        let password = format!("1115{}", time::now_utc().tm_year % 100);
+        use chrono::{Local, Datelike};
+        let password = format!("1115{}", Local::today().year() % 100);
         let matches = (matching::DateMatch {}).get_matches(&password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
@@ -1460,7 +1460,7 @@ mod tests {
         } else {
             panic!("Wrong match pattern")
         };
-        assert_eq!(p.year, time::now_utc().tm_year as i16 + 1900);
+        assert_eq!(p.year, Local::today().year());
         assert_eq!(p.month, 11);
         assert_eq!(p.day, 15);
         assert_eq!(p.separator, "".to_string());

@@ -26,7 +26,7 @@ extern crate serde;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
-use time;
+use std::time::{Duration, Instant};
 
 #[cfg(test)]
 #[macro_use]
@@ -59,8 +59,8 @@ pub struct Entropy {
     pub feedback: Option<feedback::Feedback>,
     /// The list of patterns the guess calculation was based on
     pub sequence: Vec<Match>,
-    /// How long it took to calculate the answer, in milliseconds
-    pub calc_time: u64,
+    /// How long it took to calculate the answer.
+    pub calc_time: Duration,
 }
 
 quick_error! {
@@ -87,7 +87,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         return Err(ZxcvbnError::BlankPassword);
     }
 
-    let start_time_ns = time::precise_time_ns();
+    let start_time = Instant::now();
 
     // Only evaluate the first 100 characters of the input.
     // This prevents potential DoS attacks from sending extremely long input strings.
@@ -101,7 +101,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
 
     let matches = matching::omnimatch(&password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(&password, &matches, false);
-    let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
+    let calc_time = Instant::now() - start_time;
     let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &matches);
 
