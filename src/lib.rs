@@ -12,7 +12,7 @@
 //! "passwords must contain three of {lower, upper, numbers, symbols}".
 #![recursion_limit = "128"]
 #![warn(missing_docs)]
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 
 #[macro_use]
 extern crate derive_builder;
