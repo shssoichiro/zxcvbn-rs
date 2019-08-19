@@ -48,20 +48,58 @@ pub mod time_estimates;
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Entropy {
     /// Estimated guesses needed to crack the password
-    pub guesses: u64,
+    guesses: u64,
     /// Order of magnitude of `guesses`
-    pub guesses_log10: f64,
+    guesses_log10: f64,
     /// List of back-of-the-envelope crack time estimations based on a few scenarios.
-    pub crack_times: time_estimates::CrackTimes,
+    crack_times: time_estimates::CrackTimes,
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
-    pub score: u8,
+    score: u8,
     /// Verbal feedback to help choose better passwords. Set when `score` <= 2.
-    pub feedback: Option<feedback::Feedback>,
+    feedback: Option<feedback::Feedback>,
     /// The list of patterns the guess calculation was based on
-    pub sequence: Vec<Match>,
+    sequence: Vec<Match>,
     /// How long it took to calculate the answer.
-    pub calc_time: Duration,
+    calc_time: Duration,
+}
+
+impl Entropy {
+    /// The estimated number of guesses needed to crack the password.
+    pub fn guesses(&self) -> u64 {
+        self.guesses
+    }
+
+    /// The order of magnitude of `guesses`.
+    pub fn guesses_log10(&self) -> f64 {
+        self.guesses_log10
+    }
+
+    /// List of back-of-the-envelope crack time estimations based on a few scenarios.
+    pub fn crack_times(&self) -> time_estimates::CrackTimes {
+        self.crack_times
+    }
+
+    /// Overall strength score from 0-4.
+    /// Any score less than 3 should be considered too weak.
+    pub fn score(&self) -> u8 {
+        self.score
+    }
+
+    /// Feedback to help choose better passwords. Set when `score` <= 2.
+    pub fn feedback(&self) -> &Option<feedback::Feedback> {
+        &self.feedback
+    }
+
+    /// The list of patterns the guess calculation was based on
+    pub fn sequence(&self) -> &[Match] {
+        &self.sequence
+    }
+
+    /// How long it took to calculate the answer.
+    pub fn calculation_time(&self) -> Duration {
+        self.calc_time
+    }
 }
 
 quick_error! {

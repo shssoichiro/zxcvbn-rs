@@ -10,11 +10,11 @@
 //! use zxcvbn::time_estimates::CrackTimes;
 //!
 //! let entropy = zxcvbn("password123", &[])?;
-//! assert_eq!(entropy.crack_times.guesses(), 596);
-//! assert_eq!(entropy.crack_times.online_throttling_100_per_hour().to_string(), "5 hours");
-//! assert_eq!(entropy.crack_times.online_no_throttling_10_per_second().to_string(), "59 seconds");
-//! assert_eq!(entropy.crack_times.offline_slow_hashing_1e4_per_second().to_string(), "less than a second");
-//! assert_eq!(entropy.crack_times.offline_fast_hashing_1e10_per_second().to_string(), "less than a second");
+//! assert_eq!(entropy.crack_times().guesses(), 596);
+//! assert_eq!(entropy.crack_times().online_throttling_100_per_hour().to_string(), "5 hours");
+//! assert_eq!(entropy.crack_times().online_no_throttling_10_per_second().to_string(), "59 seconds");
+//! assert_eq!(entropy.crack_times().offline_slow_hashing_1e4_per_second().to_string(), "less than a second");
+//! assert_eq!(entropy.crack_times().offline_fast_hashing_1e10_per_second().to_string(), "less than a second");
 //! #
 //! #     Ok(())
 //! # }
