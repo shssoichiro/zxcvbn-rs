@@ -26,14 +26,28 @@ pub struct Match {
     pub guesses: Option<u64>,
 }
 
+impl Match {
+    /// Get the range of the index of the chars that are included in the match.
+    pub fn range_inclusive(&self) -> std::ops::RangeInclusive<usize> {
+        self.i..=self.j
+    }
+}
+
 #[allow(clippy::implicit_hasher)]
 pub(crate) fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
     let mut matches: Vec<Match> = MATCHERS
         .iter()
         .flat_map(|x| x.get_matches(password, user_inputs))
         .collect();
-    matches.sort_by_key(|m| m.j);
-    matches.sort_by_key(|m| m.i);
+    matches.sort_unstable_by(|a, b| {
+        use std::cmp::Ordering;
+        let range1 = a.range_inclusive();
+        let range2 = b.range_inclusive();
+        match range1.start().cmp(range2.start()) {
+            Ordering::Equal => range1.end().cmp(range2.end()),
+            other => other
+        }
+    });
     matches
 }
 
