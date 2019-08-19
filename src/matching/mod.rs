@@ -1,6 +1,7 @@
 /// Defines potential patterns used to match against a password
 pub mod patterns;
 
+use crate::frequency_lists::DictionaryType;
 use self::patterns::*;
 use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
@@ -26,8 +27,7 @@ pub struct Match {
 }
 
 #[allow(clippy::implicit_hasher)]
-#[doc(hidden)]
-pub fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
+pub(crate) fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
     let mut matches: Vec<Match> = MATCHERS
         .iter()
         .flat_map(|x| x.get_matches(password, user_inputs))
@@ -88,7 +88,7 @@ impl Matcher for DictionaryMatch {
         fn do_trials(
             matches: &mut Vec<Match>,
             password: &str,
-            dictionary_name: &'static str,
+            dictionary_name: DictionaryType,
             ranked_dict: &HashMap<&str, usize>,
         ) {
             let len = password.chars().count();
@@ -126,12 +126,12 @@ impl Matcher for DictionaryMatch {
         let mut matches = Vec::new();
 
         for (dictionary_name, ranked_dict) in super::frequency_lists::RANKED_DICTIONARIES.iter() {
-            do_trials(&mut matches, password, dictionary_name, ranked_dict);
+            do_trials(&mut matches, password, *dictionary_name, ranked_dict);
         }
         do_trials(
             &mut matches,
             password,
-            "user_inputs",
+            DictionaryType::UserInputs,
             &user_inputs.iter().map(|(x, &i)| (x.as_str(), i)).collect(),
         );
 
@@ -977,6 +977,7 @@ mod tests {
 
     #[test]
     fn test_dictionary_matches_user_inputs() {
+        use crate::frequency_lists::DictionaryType;
         let user_inputs = [("bejeebus".to_string(), 1)]
             .into_iter()
             .cloned()
@@ -994,7 +995,7 @@ mod tests {
             } else {
                 panic!("Wrong match pattern")
             };
-            assert_eq!(p.dictionary_name, "user_inputs");
+            assert_eq!(p.dictionary_name, DictionaryType::UserInputs);
         }
     }
 

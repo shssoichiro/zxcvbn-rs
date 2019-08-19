@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use chrono::{Local, Datelike};
 
 #[derive(Debug, Clone)]
-#[doc(hidden)]
 pub struct GuessCalculation {
     /// Estimated guesses needed to crack the password
     pub guesses: u64,
@@ -38,7 +37,6 @@ const MIN_GUESSES_BEFORE_GROWING_SEQUENCE: u64 = 10_000;
 const MIN_SUBMATCH_GUESSES_SINGLE_CHAR: u64 = 10;
 const MIN_SUBMATCH_GUESSES_MULTI_CHAR: u64 = 50;
 
-#[doc(hidden)]
 pub fn most_guessable_match_sequence(
     password: &str,
     matches: &[crate::matching::Match],
