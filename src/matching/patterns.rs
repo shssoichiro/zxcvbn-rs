@@ -1,6 +1,6 @@
+use crate::frequency_lists::DictionaryType;
 use crate::matching::Match;
 use std::collections::HashMap;
-use crate::frequency_lists::DictionaryType;
 
 /// Pattern type used to detect a match
 #[derive(Debug, Clone, PartialEq)]
@@ -25,6 +25,7 @@ pub enum MatchPattern {
 }
 
 impl MatchPattern {
+    #[cfg(test)]
     pub(crate) fn variant(&self) -> &str {
         match *self {
             MatchPattern::Dictionary(_) => "dictionary",

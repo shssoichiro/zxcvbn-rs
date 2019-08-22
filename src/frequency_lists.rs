@@ -15,7 +15,7 @@ pub enum DictionaryType {
     MaleNames,
     Surnames,
     UsTvAndFilm,
-    UserInputs
+    UserInputs,
 }
 
 impl Default for DictionaryType {

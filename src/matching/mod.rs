@@ -1,8 +1,8 @@
 /// Defines potential patterns used to match against a password
 pub mod patterns;
 
-use crate::frequency_lists::DictionaryType;
 use self::patterns::*;
+use crate::frequency_lists::DictionaryType;
 use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
 use regex::Regex;
@@ -45,7 +45,7 @@ pub(crate) fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) ->
         let range2 = b.range_inclusive();
         match range1.start().cmp(range2.start()) {
             Ordering::Equal => range1.end().cmp(range2.end()),
-            other => other
+            other => other,
         }
     });
     matches
@@ -1464,7 +1464,7 @@ mod tests {
 
     #[test]
     fn test_date_matches_year_closest_to_reference_year() {
-        use chrono::{Local, Datelike};
+        use chrono::{Datelike, Local};
         let password = format!("1115{}", Local::today().year() % 100);
         let matches = (matching::DateMatch {}).get_matches(&password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == password).unwrap();

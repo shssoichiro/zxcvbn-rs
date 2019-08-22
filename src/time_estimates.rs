@@ -39,25 +39,25 @@ impl CrackTimes {
     }
 
     /// Get the amount of guesses needed to crack the password.
-    pub fn guesses(&self) -> u64 {
+    pub fn guesses(self) -> u64 {
         self.guesses
     }
 
     /// Online attack on a service that rate-limits password attempts.
-    pub fn online_throttling_100_per_hour(&self) -> CrackTimeSeconds {
+    pub fn online_throttling_100_per_hour(self) -> CrackTimeSeconds {
         CrackTimeSeconds::Integer(self.guesses.saturating_mul(36))
     }
 
     /// Online attack on a service that doesn't rate-limit,
     /// or where an attacker has outsmarted rate-limiting.
-    pub fn online_no_throttling_10_per_second(&self) -> CrackTimeSeconds {
+    pub fn online_no_throttling_10_per_second(self) -> CrackTimeSeconds {
         CrackTimeSeconds::Float(self.guesses as f64 / 10.00)
     }
 
     /// Offline attack, assumes multiple attackers.
     /// Proper user-unique salting, and a slow hash function
     /// such as bcrypt, scrypt, PBKDF2.
-    pub fn offline_slow_hashing_1e4_per_second(&self) -> CrackTimeSeconds {
+    pub fn offline_slow_hashing_1e4_per_second(self) -> CrackTimeSeconds {
         CrackTimeSeconds::Float(self.guesses as f64 / 10_000.00)
     }
 
@@ -65,7 +65,7 @@ impl CrackTimes {
     /// such as SHA-1, SHA-256, or MD5. A wide range of reasonable numbers
     /// anywhere from one billion to one trillion guesses per second,
     /// depending on number of cores and machines, ballparking at 10 billion per second.
-    pub fn offline_fast_hashing_1e10_per_second(&self) -> CrackTimeSeconds {
+    pub fn offline_fast_hashing_1e10_per_second(self) -> CrackTimeSeconds {
         CrackTimeSeconds::Float(self.guesses as f64 / 10_000_000_000.00)
     }
 }

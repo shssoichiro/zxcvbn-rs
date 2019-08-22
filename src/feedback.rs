@@ -1,13 +1,15 @@
 //! Contains structs and methods related to generating feedback strings
 //! for providing help for the user to generate stronger passwords.
 
+use crate::frequency_lists::DictionaryType;
 use crate::matching::patterns::*;
 use crate::matching::Match;
 use std::fmt;
-use crate::frequency_lists::DictionaryType;
 
+/// A warning explains what's wrong with the password.
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
+#[allow(missing_docs)]
 pub enum Warning {
     StraightRowsOfKeysAreEasyToGuess,
     ShortKeyboardPatternsAreEasyToGuess,
@@ -22,32 +24,51 @@ pub enum Warning {
     AWordByItselfIsEasyToGuess,
     DatesAreOftenEasyToGuess,
     NamesAndSurnamesByThemselvesAreEasyToGuess,
-    CommonNamesAndSurnamesAreEasyToGuess
+    CommonNamesAndSurnamesAreEasyToGuess,
 }
 
 impl fmt::Display for Warning {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Warning::StraightRowsOfKeysAreEasyToGuess => write!(f, "Straight rows of keys are easy to guess."),
-            Warning::ShortKeyboardPatternsAreEasyToGuess => write!(f, "Short keyboard patterns are easy to guess."),
-            Warning::RepeatsLikeAaaAreEasyToGuess => write!(f, "Repeats like \"aaa\" are easy to guess."),
-            Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess => write!(f, "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."),
+            Warning::StraightRowsOfKeysAreEasyToGuess => {
+                write!(f, "Straight rows of keys are easy to guess.")
+            }
+            Warning::ShortKeyboardPatternsAreEasyToGuess => {
+                write!(f, "Short keyboard patterns are easy to guess.")
+            }
+            Warning::RepeatsLikeAaaAreEasyToGuess => {
+                write!(f, "Repeats like \"aaa\" are easy to guess.")
+            }
+            Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess => write!(
+                f,
+                "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
+            ),
             Warning::ThisIsATop10Password => write!(f, "This is a top-10 common password."),
             Warning::ThisIsATop100Password => write!(f, "This is a top-100 common password."),
             Warning::ThisIsACommonPassword => write!(f, "This is a very common password."),
-            Warning::ThisIsSimilarToACommonlyUsedPassword => write!(f, "This is similar to a commonly used password."),
-            Warning::SequencesLikeAbcAreEasyToGuess => write!(f, "Sequences like abc or 6543 are easy to guess."),
+            Warning::ThisIsSimilarToACommonlyUsedPassword => {
+                write!(f, "This is similar to a commonly used password.")
+            }
+            Warning::SequencesLikeAbcAreEasyToGuess => {
+                write!(f, "Sequences like abc or 6543 are easy to guess.")
+            }
             Warning::RecentYearsAreEasyToGuess => write!(f, "Recent years are easy to guess."),
             Warning::AWordByItselfIsEasyToGuess => write!(f, "A word by itself is easy to guess."),
             Warning::DatesAreOftenEasyToGuess => write!(f, "Dates are often easy to guess."),
-            Warning::NamesAndSurnamesByThemselvesAreEasyToGuess => write!(f, "Names and surnames by themselves are easy to guess."),
-            Warning::CommonNamesAndSurnamesAreEasyToGuess => write!(f, "Common names and surnames are easy to guess.")
+            Warning::NamesAndSurnamesByThemselvesAreEasyToGuess => {
+                write!(f, "Names and surnames by themselves are easy to guess.")
+            }
+            Warning::CommonNamesAndSurnamesAreEasyToGuess => {
+                write!(f, "Common names and surnames are easy to guess.")
+            }
         }
     }
 }
 
+/// A suggestion helps to choose a better password.
 #[derive(Debug, Copy, Clone)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
+#[allow(missing_docs)]
 pub enum Suggestion {
     UseAFewWordsAvoidCommonPhrases,
     NoNeedForSymbolsDigitsOrUppercaseLetters,
@@ -61,25 +82,49 @@ pub enum Suggestion {
     AvoidSequences,
     AvoidRecentYears,
     AvoidYearsThatAreAssociatedWithYou,
-    AvoidDatesAndYearsThatAreAssociatedWithYou
+    AvoidDatesAndYearsThatAreAssociatedWithYou,
 }
 
 impl fmt::Display for Suggestion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Suggestion::UseAFewWordsAvoidCommonPhrases => write!(f, "Use a few words, avoid common phrases."),
-            Suggestion::NoNeedForSymbolsDigitsOrUppercaseLetters => write!(f, "No need for symbols, digits, or uppercase letters."),
-            Suggestion::AddAnotherWordOrTwo => write!(f, "Add another word or two. Uncommon words are better."),
-            Suggestion::CapitalizationDoesntHelpVeryMuch => write!(f, "Capitalization doesn't help very much."),
-            Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase => write!(f, "All-uppercase is almost as easy to guess as all-lowercase."),
-            Suggestion::ReversedWordsArentMuchHarderToGuess => write!(f, "Reversed words aren't much harder to guess."),
-            Suggestion::PredictableSubstitutionsDontHelpVeryMuch => write!(f, "Predictable substitutions like '@' instead of 'a' don't help very much."),
-            Suggestion::UseALongerKeyboardPatternWithMoreTurns => write!(f, "Use a longer keyboard pattern with more turns."),
-            Suggestion::AvoidRepeatedWordsAndCharacters => write!(f, "Avoid repeated words and characters."),
+            Suggestion::UseAFewWordsAvoidCommonPhrases => {
+                write!(f, "Use a few words, avoid common phrases.")
+            }
+            Suggestion::NoNeedForSymbolsDigitsOrUppercaseLetters => {
+                write!(f, "No need for symbols, digits, or uppercase letters.")
+            }
+            Suggestion::AddAnotherWordOrTwo => {
+                write!(f, "Add another word or two. Uncommon words are better.")
+            }
+            Suggestion::CapitalizationDoesntHelpVeryMuch => {
+                write!(f, "Capitalization doesn't help very much.")
+            }
+            Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase => write!(
+                f,
+                "All-uppercase is almost as easy to guess as all-lowercase."
+            ),
+            Suggestion::ReversedWordsArentMuchHarderToGuess => {
+                write!(f, "Reversed words aren't much harder to guess.")
+            }
+            Suggestion::PredictableSubstitutionsDontHelpVeryMuch => write!(
+                f,
+                "Predictable substitutions like '@' instead of 'a' don't help very much."
+            ),
+            Suggestion::UseALongerKeyboardPatternWithMoreTurns => {
+                write!(f, "Use a longer keyboard pattern with more turns.")
+            }
+            Suggestion::AvoidRepeatedWordsAndCharacters => {
+                write!(f, "Avoid repeated words and characters.")
+            }
             Suggestion::AvoidSequences => write!(f, "Avoid sequences."),
             Suggestion::AvoidRecentYears => write!(f, "Avoid recent years."),
-            Suggestion::AvoidYearsThatAreAssociatedWithYou => write!(f, "Avoid years that are associated with you."),
-            Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou => write!(f, "Avoid dates and years that are associated with you.")
+            Suggestion::AvoidYearsThatAreAssociatedWithYou => {
+                write!(f, "Avoid years that are associated with you.")
+            }
+            Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou => {
+                write!(f, "Avoid dates and years that are associated with you.")
+            }
         }
     }
 }
@@ -208,11 +253,13 @@ fn get_dictionary_match_feedback(
                 None
             }
         }
-        DictionaryType::Surnames | DictionaryType::FemaleNames | DictionaryType::MaleNames => Some(if is_sole_match {
-            Warning::NamesAndSurnamesByThemselvesAreEasyToGuess
-        } else {
-            Warning::CommonNamesAndSurnamesAreEasyToGuess
-        }),
+        DictionaryType::Surnames | DictionaryType::FemaleNames | DictionaryType::MaleNames => {
+            Some(if is_sole_match {
+                Warning::NamesAndSurnamesByThemselvesAreEasyToGuess
+            } else {
+                Warning::CommonNamesAndSurnamesAreEasyToGuess
+            })
+        }
         _ => None,
     };
 

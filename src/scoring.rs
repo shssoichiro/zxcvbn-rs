@@ -1,8 +1,8 @@
 use crate::matching::patterns::*;
 use crate::matching::{Match, MatchBuilder};
+use chrono::{Datelike, Local};
 use std::cmp;
 use std::collections::HashMap;
-use chrono::{Local, Datelike};
 
 #[derive(Debug, Clone)]
 pub struct GuessCalculation {
