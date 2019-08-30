@@ -2,6 +2,7 @@
 pub mod patterns;
 
 use self::patterns::*;
+use crate::frequency_lists::DictionaryType;
 use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
 use regex::Regex;
@@ -25,15 +26,28 @@ pub struct Match {
     pub guesses: Option<u64>,
 }
 
+impl Match {
+    /// Get the range of the index of the chars that are included in the match.
+    pub fn range_inclusive(&self) -> std::ops::RangeInclusive<usize> {
+        self.i..=self.j
+    }
+}
+
 #[allow(clippy::implicit_hasher)]
-#[doc(hidden)]
-pub fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
+pub(crate) fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
     let mut matches: Vec<Match> = MATCHERS
         .iter()
         .flat_map(|x| x.get_matches(password, user_inputs))
         .collect();
-    matches.sort_by_key(|m| m.j);
-    matches.sort_by_key(|m| m.i);
+    matches.sort_unstable_by(|a, b| {
+        use std::cmp::Ordering;
+        let range1 = a.range_inclusive();
+        let range2 = b.range_inclusive();
+        match range1.start().cmp(range2.start()) {
+            Ordering::Equal => range1.end().cmp(range2.end()),
+            other => other,
+        }
+    });
     matches
 }
 
@@ -88,7 +102,7 @@ impl Matcher for DictionaryMatch {
         fn do_trials(
             matches: &mut Vec<Match>,
             password: &str,
-            dictionary_name: &'static str,
+            dictionary_name: DictionaryType,
             ranked_dict: &HashMap<&str, usize>,
         ) {
             let len = password.chars().count();
@@ -126,12 +140,12 @@ impl Matcher for DictionaryMatch {
         let mut matches = Vec::new();
 
         for (dictionary_name, ranked_dict) in super::frequency_lists::RANKED_DICTIONARIES.iter() {
-            do_trials(&mut matches, password, dictionary_name, ranked_dict);
+            do_trials(&mut matches, password, *dictionary_name, ranked_dict);
         }
         do_trials(
             &mut matches,
             password,
-            "user_inputs",
+            DictionaryType::UserInputs,
             &user_inputs.iter().map(|(x, &i)| (x.as_str(), i)).collect(),
         );
 
@@ -675,7 +689,7 @@ impl Matcher for DateMatch {
                 //
                 // ie, considering '111504', prefer 11-15-04 to 1-1-1504
                 // (interpreting '04' as 2004)
-                let metric = |candidate: &(i16, i8, i8)| {
+                let metric = |candidate: &(i32, i8, i8)| {
                     (candidate.0 - *super::scoring::REFERENCE_YEAR).abs()
                 };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
@@ -761,7 +775,7 @@ impl Matcher for DateMatch {
 }
 
 /// Takes three ints and returns them in a (y, m, d) tuple
-fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)> {
+fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i32, i8, i8)> {
     // given a 3-tuple, discard if:
     //   middle int is over 31 (for all ymd formats, years are never allowed in the middle)
     //   middle int is zero
@@ -800,7 +814,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)>
         if DATE_MIN_YEAR <= year && year <= DATE_MAX_YEAR {
             let dm = map_ints_to_md(second, third);
             if let Some(dm) = dm {
-                return Some((year as i16, dm.0, dm.1));
+                return Some((i32::from(year), dm.0, dm.1));
             } else {
                 // for a candidate that includes a four-digit year,
                 // when the remaining ints don't match to a day and month,
@@ -816,7 +830,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i16, i8, i8)>
         let dm = map_ints_to_md(second, third);
         if let Some(dm) = dm {
             let year = two_to_four_digit_year(year);
-            return Some((year as i16, dm.0, dm.1));
+            return Some((i32::from(year), dm.0, dm.1));
         }
     }
 
@@ -881,7 +895,6 @@ mod tests {
     use crate::matching::patterns::*;
     use crate::matching::Matcher;
     use std::collections::HashMap;
-    use time;
 
     #[test]
     fn test_translate() {
@@ -978,6 +991,7 @@ mod tests {
 
     #[test]
     fn test_dictionary_matches_user_inputs() {
+        use crate::frequency_lists::DictionaryType;
         let user_inputs = [("bejeebus".to_string(), 1)]
             .into_iter()
             .cloned()
@@ -995,7 +1009,7 @@ mod tests {
             } else {
                 panic!("Wrong match pattern")
             };
-            assert_eq!(p.dictionary_name, "user_inputs");
+            assert_eq!(p.dictionary_name, DictionaryType::UserInputs);
         }
     }
 
@@ -1450,7 +1464,8 @@ mod tests {
 
     #[test]
     fn test_date_matches_year_closest_to_reference_year() {
-        let password = format!("1115{}", time::now_utc().tm_year % 100);
+        use chrono::{Datelike, Local};
+        let password = format!("1115{}", Local::today().year() % 100);
         let matches = (matching::DateMatch {}).get_matches(&password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
@@ -1460,7 +1475,7 @@ mod tests {
         } else {
             panic!("Wrong match pattern")
         };
-        assert_eq!(p.year, time::now_utc().tm_year as i16 + 1900);
+        assert_eq!(p.year, Local::today().year());
         assert_eq!(p.month, 11);
         assert_eq!(p.day, 15);
         assert_eq!(p.separator, "".to_string());

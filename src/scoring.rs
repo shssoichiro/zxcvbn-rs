@@ -1,11 +1,10 @@
 use crate::matching::patterns::*;
 use crate::matching::{Match, MatchBuilder};
+use chrono::{Datelike, Local};
 use std::cmp;
 use std::collections::HashMap;
-use time;
 
 #[derive(Debug, Clone)]
-#[doc(hidden)]
 pub struct GuessCalculation {
     /// Estimated guesses needed to crack the password
     pub guesses: u64,
@@ -30,16 +29,14 @@ struct Optimal {
 }
 
 lazy_static! {
-    #[doc(hidden)]
-    pub static ref REFERENCE_YEAR: i16 = time::now_utc().tm_year as i16 + 1900;
+    pub(crate) static ref REFERENCE_YEAR: i32 = Local::today().year();
 }
-const MIN_YEAR_SPACE: i16 = 20;
+const MIN_YEAR_SPACE: i32 = 20;
 const BRUTEFORCE_CARDINALITY: u64 = 10;
 const MIN_GUESSES_BEFORE_GROWING_SEQUENCE: u64 = 10_000;
 const MIN_SUBMATCH_GUESSES_SINGLE_CHAR: u64 = 10;
 const MIN_SUBMATCH_GUESSES_MULTI_CHAR: u64 = 50;
 
-#[doc(hidden)]
 pub fn most_guessable_match_sequence(
     password: &str,
     matches: &[crate::matching::Match],
@@ -426,7 +423,7 @@ impl Estimator for RegexPattern {
             match self.regex_name {
                 "recent_year" => {
                     let year_space =
-                        (self.regex_match[0].parse::<i16>().unwrap() - *REFERENCE_YEAR).abs();
+                        (self.regex_match[0].parse::<i32>().unwrap() - *REFERENCE_YEAR).abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
                 }
                 _ => unreachable!(),

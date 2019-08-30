@@ -12,6 +12,7 @@
 //! "passwords must contain three of {lower, upper, numbers, symbols}".
 #![recursion_limit = "128"]
 #![warn(missing_docs)]
+#![forbid(unsafe_code)]
 
 #[macro_use]
 extern crate derive_builder;
@@ -26,7 +27,7 @@ extern crate serde;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
-use time;
+use std::time::{Duration, Instant};
 
 #[cfg(test)]
 #[macro_use]
@@ -47,20 +48,58 @@ pub mod time_estimates;
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Entropy {
     /// Estimated guesses needed to crack the password
-    pub guesses: u64,
+    guesses: u64,
     /// Order of magnitude of `guesses`
-    pub guesses_log10: f64,
+    guesses_log10: f64,
     /// List of back-of-the-envelope crack time estimations based on a few scenarios.
-    pub crack_times: time_estimates::CrackTimes,
+    crack_times: time_estimates::CrackTimes,
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
-    pub score: u8,
+    score: u8,
     /// Verbal feedback to help choose better passwords. Set when `score` <= 2.
-    pub feedback: Option<feedback::Feedback>,
+    feedback: Option<feedback::Feedback>,
     /// The list of patterns the guess calculation was based on
-    pub sequence: Vec<Match>,
-    /// How long it took to calculate the answer, in milliseconds
-    pub calc_time: u64,
+    sequence: Vec<Match>,
+    /// How long it took to calculate the answer.
+    calc_time: Duration,
+}
+
+impl Entropy {
+    /// The estimated number of guesses needed to crack the password.
+    pub fn guesses(&self) -> u64 {
+        self.guesses
+    }
+
+    /// The order of magnitude of `guesses`.
+    pub fn guesses_log10(&self) -> f64 {
+        self.guesses_log10
+    }
+
+    /// List of back-of-the-envelope crack time estimations based on a few scenarios.
+    pub fn crack_times(&self) -> time_estimates::CrackTimes {
+        self.crack_times
+    }
+
+    /// Overall strength score from 0-4.
+    /// Any score less than 3 should be considered too weak.
+    pub fn score(&self) -> u8 {
+        self.score
+    }
+
+    /// Feedback to help choose better passwords. Set when `score` <= 2.
+    pub fn feedback(&self) -> &Option<feedback::Feedback> {
+        &self.feedback
+    }
+
+    /// The list of patterns the guess calculation was based on
+    pub fn sequence(&self) -> &[Match] {
+        &self.sequence
+    }
+
+    /// How long it took to calculate the answer.
+    pub fn calculation_time(&self) -> Duration {
+        self.calc_time
+    }
 }
 
 quick_error! {
@@ -87,7 +126,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         return Err(ZxcvbnError::BlankPassword);
     }
 
-    let start_time_ns = time::precise_time_ns();
+    let start_time = Instant::now();
 
     // Only evaluate the first 100 characters of the input.
     // This prevents potential DoS attacks from sending extremely long input strings.
@@ -101,7 +140,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
 
     let matches = matching::omnimatch(&password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(&password, &matches, false);
-    let calc_time = (time::precise_time_ns() - start_time_ns) / 1_000_000;
+    let calc_time = Instant::now() - start_time;
     let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &matches);
 

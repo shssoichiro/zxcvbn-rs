@@ -1,3 +1,4 @@
+use crate::frequency_lists::DictionaryType;
 use crate::matching::Match;
 use std::collections::HashMap;
 
@@ -24,8 +25,8 @@ pub enum MatchPattern {
 }
 
 impl MatchPattern {
-    #[doc(hidden)]
-    pub fn variant(&self) -> &str {
+    #[cfg(test)]
+    pub(crate) fn variant(&self) -> &str {
         match *self {
             MatchPattern::Dictionary(_) => "dictionary",
             MatchPattern::Spatial(_) => "spatial",
@@ -54,7 +55,7 @@ pub struct DictionaryPattern {
     /// Rank of the the word found in a dictionary.
     pub rank: usize,
     /// Name of the dictionary in which a word has been found.
-    pub dictionary_name: &'static str,
+    pub dictionary_name: DictionaryType,
     /// Whether a reversed word has been found in a dictionary.
     pub reversed: bool,
     /// Whether a l33t-substituted word has been found in a dictionary.
@@ -131,7 +132,7 @@ pub struct DatePattern {
     /// Separator of a date that was matched.
     pub separator: String,
     /// Year that was matched.
-    pub year: i16,
+    pub year: i32,
     /// Month that was matched.
     pub month: i8,
     /// Day that was matched.

@@ -1,29 +1,166 @@
 //! Contains structs and methods related to generating feedback strings
 //! for providing help for the user to generate stronger passwords.
 
+use crate::frequency_lists::DictionaryType;
 use crate::matching::patterns::*;
 use crate::matching::Match;
+use std::fmt;
+
+/// A warning explains what's wrong with the password.
+#[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "ser", derive(Serialize))]
+#[allow(missing_docs)]
+pub enum Warning {
+    StraightRowsOfKeysAreEasyToGuess,
+    ShortKeyboardPatternsAreEasyToGuess,
+    RepeatsLikeAaaAreEasyToGuess,
+    RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess,
+    ThisIsATop10Password,
+    ThisIsATop100Password,
+    ThisIsACommonPassword,
+    ThisIsSimilarToACommonlyUsedPassword,
+    SequencesLikeAbcAreEasyToGuess,
+    RecentYearsAreEasyToGuess,
+    AWordByItselfIsEasyToGuess,
+    DatesAreOftenEasyToGuess,
+    NamesAndSurnamesByThemselvesAreEasyToGuess,
+    CommonNamesAndSurnamesAreEasyToGuess,
+}
+
+impl fmt::Display for Warning {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Warning::StraightRowsOfKeysAreEasyToGuess => {
+                write!(f, "Straight rows of keys are easy to guess.")
+            }
+            Warning::ShortKeyboardPatternsAreEasyToGuess => {
+                write!(f, "Short keyboard patterns are easy to guess.")
+            }
+            Warning::RepeatsLikeAaaAreEasyToGuess => {
+                write!(f, "Repeats like \"aaa\" are easy to guess.")
+            }
+            Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess => write!(
+                f,
+                "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
+            ),
+            Warning::ThisIsATop10Password => write!(f, "This is a top-10 common password."),
+            Warning::ThisIsATop100Password => write!(f, "This is a top-100 common password."),
+            Warning::ThisIsACommonPassword => write!(f, "This is a very common password."),
+            Warning::ThisIsSimilarToACommonlyUsedPassword => {
+                write!(f, "This is similar to a commonly used password.")
+            }
+            Warning::SequencesLikeAbcAreEasyToGuess => {
+                write!(f, "Sequences like abc or 6543 are easy to guess.")
+            }
+            Warning::RecentYearsAreEasyToGuess => write!(f, "Recent years are easy to guess."),
+            Warning::AWordByItselfIsEasyToGuess => write!(f, "A word by itself is easy to guess."),
+            Warning::DatesAreOftenEasyToGuess => write!(f, "Dates are often easy to guess."),
+            Warning::NamesAndSurnamesByThemselvesAreEasyToGuess => {
+                write!(f, "Names and surnames by themselves are easy to guess.")
+            }
+            Warning::CommonNamesAndSurnamesAreEasyToGuess => {
+                write!(f, "Common names and surnames are easy to guess.")
+            }
+        }
+    }
+}
+
+/// A suggestion helps to choose a better password.
+#[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "ser", derive(Serialize))]
+#[allow(missing_docs)]
+pub enum Suggestion {
+    UseAFewWordsAvoidCommonPhrases,
+    NoNeedForSymbolsDigitsOrUppercaseLetters,
+    AddAnotherWordOrTwo,
+    CapitalizationDoesntHelpVeryMuch,
+    AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase,
+    ReversedWordsArentMuchHarderToGuess,
+    PredictableSubstitutionsDontHelpVeryMuch,
+    UseALongerKeyboardPatternWithMoreTurns,
+    AvoidRepeatedWordsAndCharacters,
+    AvoidSequences,
+    AvoidRecentYears,
+    AvoidYearsThatAreAssociatedWithYou,
+    AvoidDatesAndYearsThatAreAssociatedWithYou,
+}
+
+impl fmt::Display for Suggestion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Suggestion::UseAFewWordsAvoidCommonPhrases => {
+                write!(f, "Use a few words, avoid common phrases.")
+            }
+            Suggestion::NoNeedForSymbolsDigitsOrUppercaseLetters => {
+                write!(f, "No need for symbols, digits, or uppercase letters.")
+            }
+            Suggestion::AddAnotherWordOrTwo => {
+                write!(f, "Add another word or two. Uncommon words are better.")
+            }
+            Suggestion::CapitalizationDoesntHelpVeryMuch => {
+                write!(f, "Capitalization doesn't help very much.")
+            }
+            Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase => write!(
+                f,
+                "All-uppercase is almost as easy to guess as all-lowercase."
+            ),
+            Suggestion::ReversedWordsArentMuchHarderToGuess => {
+                write!(f, "Reversed words aren't much harder to guess.")
+            }
+            Suggestion::PredictableSubstitutionsDontHelpVeryMuch => write!(
+                f,
+                "Predictable substitutions like '@' instead of 'a' don't help very much."
+            ),
+            Suggestion::UseALongerKeyboardPatternWithMoreTurns => {
+                write!(f, "Use a longer keyboard pattern with more turns.")
+            }
+            Suggestion::AvoidRepeatedWordsAndCharacters => {
+                write!(f, "Avoid repeated words and characters.")
+            }
+            Suggestion::AvoidSequences => write!(f, "Avoid sequences."),
+            Suggestion::AvoidRecentYears => write!(f, "Avoid recent years."),
+            Suggestion::AvoidYearsThatAreAssociatedWithYou => {
+                write!(f, "Avoid years that are associated with you.")
+            }
+            Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou => {
+                write!(f, "Avoid dates and years that are associated with you.")
+            }
+        }
+    }
+}
 
 /// Verbal feedback to help choose better passwords
 #[derive(Debug, Clone, Default)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct Feedback {
     /// Explains what's wrong, e.g. "This is a top-10 common password". Not always set.
-    pub warning: Option<&'static str>,
+    warning: Option<Warning>,
     /// A possibly-empty list of suggestions to help choose a less guessable password.
     /// E.g. "Add another word or two".
-    pub suggestions: Vec<&'static str>,
+    suggestions: Vec<Suggestion>,
 }
 
-#[doc(hidden)]
-pub fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
+impl Feedback {
+    /// Explains what's wrong, e.g. "This is a top-10 common password". Not always set.
+    pub fn warning(&self) -> Option<Warning> {
+        self.warning
+    }
+
+    /// A possibly-empty list of suggestions to help choose a less guessable password.
+    /// E.g. "Add another word or two".
+    pub fn suggestions(&self) -> &[Suggestion] {
+        &self.suggestions
+    }
+}
+
+pub(crate) fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
     if sequence.is_empty() {
         // default feedback
         return Some(Feedback {
             warning: None,
             suggestions: vec![
-                "Use a few words, avoid common phrases.",
-                "No need for symbols, digits, or uppercase letters.",
+                Suggestion::UseAFewWordsAvoidCommonPhrases,
+                Suggestion::NoNeedForSymbolsDigitsOrUppercaseLetters,
             ],
         });
     }
@@ -36,7 +173,7 @@ pub fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
         .max_by_key(|x| x.token.chars().count())
         .unwrap();
     let mut feedback = get_match_feedback(longest_match, sequence.len() == 1);
-    let extra_feedback = "Add another word or two. Uncommon words are better.";
+    let extra_feedback = Suggestion::AddAnotherWordOrTwo;
 
     feedback.suggestions.insert(0, extra_feedback);
     Some(feedback)
@@ -49,31 +186,31 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
         }
         MatchPattern::Spatial(ref pattern) => Feedback {
             warning: Some(if pattern.turns == 1 {
-                "Straight rows of keys are easy to guess."
+                Warning::StraightRowsOfKeysAreEasyToGuess
             } else {
-                "Short keyboard patterns are easy to guess."
+                Warning::ShortKeyboardPatternsAreEasyToGuess
             }),
-            suggestions: vec!["Use a longer keyboard pattern with more turns."],
+            suggestions: vec![Suggestion::UseALongerKeyboardPatternWithMoreTurns],
         },
         MatchPattern::Repeat(ref pattern) => Feedback {
             warning: Some(if pattern.base_token.chars().count() == 1 {
-                "Repeats like \"aaa\" are easy to guess."
+                Warning::RepeatsLikeAaaAreEasyToGuess
             } else {
-                "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
+                Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess
             }),
-            suggestions: vec!["Avoid repeated words and characters."],
+            suggestions: vec![Suggestion::AvoidRepeatedWordsAndCharacters],
         },
         MatchPattern::Sequence(_) => Feedback {
-            warning: Some("Sequences like abc or 6543 are easy to guess."),
-            suggestions: vec!["Avoid sequences."],
+            warning: Some(Warning::SequencesLikeAbcAreEasyToGuess),
+            suggestions: vec![Suggestion::AvoidSequences],
         },
         MatchPattern::Regex(ref pattern) => {
             if pattern.regex_name == "recent_year" {
                 Feedback {
-                    warning: Some("Recent years are easy to guess."),
+                    warning: Some(Warning::RecentYearsAreEasyToGuess),
                     suggestions: vec![
-                        "Avoid recent years.",
-                        "Avoid years that are associated with you.",
+                        Suggestion::AvoidRecentYears,
+                        Suggestion::AvoidYearsThatAreAssociatedWithYou,
                     ],
                 }
             } else {
@@ -81,8 +218,8 @@ fn get_match_feedback(cur_match: &Match, is_sole_match: bool) -> Feedback {
             }
         }
         MatchPattern::Date(_) => Feedback {
-            warning: Some("Dates are often easy to guess."),
-            suggestions: vec!["Avoid dates and years that are associated with you."],
+            warning: Some(Warning::DatesAreOftenEasyToGuess),
+            suggestions: vec![Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou],
         },
         _ => Feedback {
             warning: None,
@@ -96,51 +233,53 @@ fn get_dictionary_match_feedback(
     pattern: &DictionaryPattern,
     is_sole_match: bool,
 ) -> Feedback {
-    let warning = match pattern.dictionary_name {
-        "passwords" => Some(if is_sole_match && !pattern.l33t && !pattern.reversed {
+    let warning: Option<Warning> = match pattern.dictionary_name {
+        DictionaryType::Passwords => Some(if is_sole_match && !pattern.l33t && !pattern.reversed {
             let rank = pattern.rank;
             if rank <= 10 {
-                "This is a top-10 common password."
+                Warning::ThisIsATop10Password
             } else if rank <= 100 {
-                "This is a top-100 common password."
+                Warning::ThisIsATop100Password
             } else {
-                "This is a very common password."
+                Warning::ThisIsACommonPassword
             }
         } else {
-            "This is similar to a commonly used password."
+            Warning::ThisIsSimilarToACommonlyUsedPassword
         }),
-        "english" => {
+        DictionaryType::English => {
             if is_sole_match {
-                Some("A word by itself is easy to guess.")
+                Some(Warning::AWordByItselfIsEasyToGuess)
             } else {
                 None
             }
         }
-        "surnames" | "female_names" | "male_names" => Some(if is_sole_match {
-            "Names and surnames by themselves are easy to guess."
-        } else {
-            "Common names and surnames are easy to guess."
-        }),
+        DictionaryType::Surnames | DictionaryType::FemaleNames | DictionaryType::MaleNames => {
+            Some(if is_sole_match {
+                Warning::NamesAndSurnamesByThemselvesAreEasyToGuess
+            } else {
+                Warning::CommonNamesAndSurnamesAreEasyToGuess
+            })
+        }
         _ => None,
     };
 
-    let mut suggestions = Vec::new();
+    let mut suggestions: Vec<Suggestion> = Vec::new();
     let word = &cur_match.token;
     if word.is_empty() {
         return Feedback::default();
     }
 
     if word.chars().next().unwrap().is_uppercase() {
-        suggestions.push("Capitalization doesn't help very much.");
+        suggestions.push(Suggestion::CapitalizationDoesntHelpVeryMuch);
     } else if word.chars().all(char::is_uppercase) {
-        suggestions.push("All-uppercase is almost as easy to guess as all-lowercase.");
+        suggestions.push(Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase);
     }
 
     if pattern.reversed && word.chars().count() >= 4 {
-        suggestions.push("Reversed words aren't much harder to guess.");
+        suggestions.push(Suggestion::ReversedWordsArentMuchHarderToGuess);
     }
     if pattern.l33t {
-        suggestions.push("Predictable substitutions like '@' instead of 'a' don't help very much.");
+        suggestions.push(Suggestion::PredictableSubstitutionsDontHelpVeryMuch);
     }
 
     Feedback {
