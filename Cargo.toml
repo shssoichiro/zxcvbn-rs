@@ -33,6 +33,7 @@ version = "1"
 [dev-dependencies]
 quickcheck = "0.8.0"
 serde_json = "1"
+criterion = "0.3"
 
 [features]
 default = []
@@ -40,3 +41,11 @@ ser = ["serde", "serde_derive"]
 
 [profile.test]
 opt-level = 2
+
+[[bench]]
+name = "zxcvbn"
+harness = false
+
+[[bench]]
+name = "zxcvbn_unicode"
+harness = false
