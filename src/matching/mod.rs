@@ -993,7 +993,7 @@ mod tests {
     fn test_dictionary_matches_user_inputs() {
         use crate::frequency_lists::DictionaryType;
         let user_inputs = [("bejeebus".to_string(), 1)]
-            .into_iter()
+            .iter()
             .cloned()
             .collect::<HashMap<String, usize>>();
         let matches = (matching::DictionaryMatch {}).get_matches("bejeebus", &user_inputs);
