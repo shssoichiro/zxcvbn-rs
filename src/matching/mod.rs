@@ -437,8 +437,8 @@ impl Matcher for RepeatMatch {
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
             let m4tch;
-            let base_token = if greedy_matches.at(0).unwrap().chars().count()
-                > lazy_matches.at(0).unwrap().chars().count()
+            let base_token = if greedy_matches.get(0).unwrap().as_str().chars().count()
+                > lazy_matches.get(0).unwrap().as_str().chars().count()
             {
                 // greedy beats lazy for 'aabaab'
                 //   greedy: [aabaab, aab]
@@ -449,22 +449,23 @@ impl Matcher for RepeatMatch {
                 // run an anchored lazy match on greedy's repeated string
                 // to find the shortest repeated string
                 LAZY_ANCHORED_REGEX
-                    .captures(m4tch.at(0).unwrap())
+                    .captures(m4tch.get(0).unwrap().as_str())
                     .unwrap()
                     .unwrap()
-                    .at(1)
+                    .get(1)
                     .unwrap()
+                    .as_str()
                     .to_string()
             } else {
                 // lazy beats greedy for 'aaaaa'
                 //   greedy: [aaaa,  aa]
                 //   lazy:   [aaaaa, a]
                 m4tch = lazy_matches;
-                m4tch.at(1).unwrap().to_string()
+                m4tch.get(1).unwrap().as_str().to_string()
             };
             let (i, j) = (
-                m4tch.pos(0).unwrap().0 + last_index,
-                m4tch.pos(0).unwrap().1 + last_index - 1,
+                m4tch.get(0).unwrap().start() + last_index,
+                m4tch.get(0).unwrap().end() + last_index - 1,
             );
             // recursively match and score the base string
             let base_analysis = super::scoring::most_guessable_match_sequence(
@@ -476,7 +477,9 @@ impl Matcher for RepeatMatch {
             let base_guesses = base_analysis.guesses;
             let pattern = MatchPattern::Repeat(
                 RepeatPatternBuilder::default()
-                    .repeat_count(m4tch.at(0).unwrap().chars().count() / base_token.chars().count())
+                    .repeat_count(
+                        m4tch.get(0).unwrap().as_str().chars().count() / base_token.chars().count(),
+                    )
                     .base_token(base_token)
                     .base_guesses(base_guesses)
                     .base_matches(base_matches)
@@ -488,7 +491,7 @@ impl Matcher for RepeatMatch {
                     .pattern(pattern)
                     .i(i)
                     .j(j)
-                    .token(m4tch.at(0).unwrap().to_string())
+                    .token(m4tch.get(0).unwrap().as_str().to_string())
                     .build()
                     .unwrap(),
             );
@@ -676,8 +679,8 @@ impl Matcher for DateMatch {
                             .unwrap(),
                         token.chars().skip(l).collect::<String>().parse().unwrap(),
                     );
-                    if ymd.is_some() {
-                        candidates.push(ymd.unwrap());
+                    if let Some(ymd) = ymd {
+                        candidates.push(ymd);
                     }
                 }
                 if candidates.is_empty() {
