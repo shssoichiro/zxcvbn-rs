@@ -1,3 +1,10 @@
+**Version 2.0.0**
+ - [Breaking] Update CrackTimes interface to be more idiomatic to Rust (https://github.com/shssoichiro/zxcvbn-rs/pull/24)
+ - Upgrade `derive_builder` to 0.8
+ - Upgrade `fancy_regex` to 0.2
+ - Move to 2018 edition
+ - Various internal improvements
+
 **Version 1.0.2**
  - Fix building on Rust 1.36.0 (https://github.com/shssoichiro/zxcvbn-rs/pull/21)
  - Cleanup development profiles which are no longer needed
