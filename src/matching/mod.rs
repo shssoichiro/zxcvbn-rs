@@ -457,9 +457,11 @@ impl Matcher for RepeatMatch {
                 m4tch = lazy_matches;
                 m4tch.get(1).unwrap().as_str().to_string()
             };
+
+            let m = m4tch.get(0).unwrap();
             let (i, j) = (
-                m4tch.get(0).unwrap().start() + last_index,
-                m4tch.get(0).unwrap().end() + last_index - 1,
+                last_index + token[..m.start()].chars().count(),
+                last_index + token[..m.end()].chars().count() - 1,
             );
             // recursively match and score the base string
             let base_analysis = super::scoring::most_guessable_match_sequence(
@@ -1424,7 +1426,7 @@ mod tests {
     #[test]
     fn test_identifies_repeat_with_multibyte_utf8() {
         let password = "x\u{1F431}\u{1F436}\u{1F431}\u{1F436}";
-        let (i, j) = (1, 16);
+        let (i, j) = (1, 4);
         let matches = (matching::RepeatMatch {}).get_matches(password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == password[1..]).unwrap();
         assert_eq!(m.i, i);
