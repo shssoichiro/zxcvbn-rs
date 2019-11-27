@@ -413,12 +413,6 @@ struct RepeatMatch {}
 
 impl Matcher for RepeatMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
-        if !password.is_ascii() {
-            // FancyRegex doesn't play well with multibyte UTF-8 characters and causes panics.
-            // Skip this matcher until a workaround is found.
-            return Vec::new();
-        }
-
         lazy_static! {
             static ref GREEDY_REGEX: FancyRegex = FancyRegex::new(r"(.+)\1+").unwrap();
             static ref LAZY_REGEX: FancyRegex = FancyRegex::new(r"(.+?)\1+").unwrap();
@@ -1425,6 +1419,22 @@ mod tests {
             panic!("Wrong match pattern")
         };
         assert_eq!(p.base_token, "ab".to_string());
+    }
+
+    #[test]
+    fn test_identifies_repeat_with_multibyte_utf8() {
+        let password = "x\u{1F431}\u{1F436}\u{1F431}\u{1F436}";
+        let (i, j) = (1, 16);
+        let matches = (matching::RepeatMatch {}).get_matches(password, &HashMap::new());
+        let m = matches.iter().find(|m| m.token == password[1..]).unwrap();
+        assert_eq!(m.i, i);
+        assert_eq!(m.j, j);
+        let p = if let MatchPattern::Repeat(ref p) = m.pattern {
+            p
+        } else {
+            panic!("Wrong match pattern")
+        };
+        assert_eq!(p.base_token, "\u{1F431}\u{1F436}".to_string());
     }
 
     #[test]
