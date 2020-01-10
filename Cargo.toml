@@ -14,7 +14,7 @@ travis-ci = { repository = "shssoichiro/zxcvbn-rs", branch = "master" }
 maintenance = { status = "passively-maintained" }
 
 [dependencies]
-derive_builder = "0.8.0"
+derive_builder = "0.9.0"
 fancy-regex = "0.3.0"
 itertools = "0.8.0"
 lazy_static = "1.3"
