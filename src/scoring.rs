@@ -45,7 +45,7 @@ pub fn most_guessable_match_sequence(
     let n = password.chars().count();
 
     // partition matches into sublists according to ending index j
-    let mut matches_by_j: Vec<Vec<Match>> = (0..n).map(|_| Vec::new()).collect();
+    let mut matches_by_j: Vec<Vec<Match>> = vec![Vec::new(); n];
     for m in matches {
         matches_by_j[m.j].push(m.clone());
     }
@@ -55,9 +55,9 @@ pub fn most_guessable_match_sequence(
     }
 
     let mut optimal = Optimal {
-        m: (0..n).map(|_| HashMap::new()).collect(),
-        pi: (0..n).map(|_| HashMap::new()).collect(),
-        g: (0..n).map(|_| HashMap::new()).collect(),
+        m: vec![HashMap::new(); n],
+        pi: vec![HashMap::new(); n],
+        g: vec![HashMap::new(); n],
     };
 
     /// helper: considers whether a length-l sequence ending at match m is better (fewer guesses)
