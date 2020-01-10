@@ -1,3 +1,6 @@
+**Version 2.0.1**
+ - Fix overflow bugs that may cause wrong results on very complex passwords
+
 **Version 2.0.0**
  - [Breaking] Update CrackTimes interface to be more idiomatic to Rust (https://github.com/shssoichiro/zxcvbn-rs/pull/24)
  - Upgrade `derive_builder` to 0.8

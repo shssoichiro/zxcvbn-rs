@@ -223,4 +223,12 @@ mod tests {
         assert_eq!(entropy.guesses_log10, 6.004321373782642);
         assert_eq!(entropy.score, 2);
     }
+
+    #[test]
+    fn test_overflow_safety() {
+        let password = "!QASW@#EDFR$%TGHY^&UJKI*(OL";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.guesses, u64::max_value());
+        assert_eq!(entropy.score, 4);
+    }
 }

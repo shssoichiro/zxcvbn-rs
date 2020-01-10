@@ -344,13 +344,15 @@ impl Estimator for SpatialPattern {
         } else {
             (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
         };
-        let mut guesses = 0;
+        let mut guesses = 0u64;
         let len = token.chars().count();
         // estimate the number of possible patterns w/ length L or less with t turns or less.
         for i in 2..=len {
             let possible_turns = cmp::min(self.turns, i - 1);
             for j in 1..=possible_turns {
-                guesses += n_ck(i - 1, j - 1) * starts as u64 * degree.pow(j as u32) as u64;
+                guesses = guesses.saturating_add(
+                    n_ck(i - 1, j - 1) * starts as u64 * degree.pow(j as u32) as u64,
+                );
             }
         }
         // add extra guesses for shifted keys. (% instead of 5, A instead of a.)
@@ -359,12 +361,12 @@ impl Estimator for SpatialPattern {
         if shifted_count > 0 {
             let unshifted_count = len - shifted_count;
             if unshifted_count == 0 {
-                guesses *= 2;
+                guesses = guesses.saturating_mul(2);
             } else {
                 let shifted_variations: u64 = (1..=cmp::min(shifted_count, unshifted_count))
                     .map(|i| n_ck(shifted_count + unshifted_count, i))
                     .sum();
-                guesses *= shifted_variations;
+                guesses = guesses.saturating_mul(shifted_variations);
             }
         }
         guesses
@@ -389,7 +391,7 @@ fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> usiz
 
 impl Estimator for RepeatPattern {
     fn estimate(&mut self, _: &str) -> u64 {
-        self.base_guesses * self.repeat_count as u64
+        self.base_guesses.saturating_mul(self.repeat_count as u64)
     }
 }
 
