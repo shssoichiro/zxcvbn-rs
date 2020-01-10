@@ -231,4 +231,12 @@ mod tests {
         assert_eq!(entropy.guesses, u64::max_value());
         assert_eq!(entropy.score, 4);
     }
+
+    #[test]
+    fn test_unicode_mb() {
+        let password = "08märz2010";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(entropy.guesses, 100010000);
+        assert_eq!(entropy.score, 3);
+    }
 }

@@ -588,7 +588,7 @@ impl Matcher for RegexMatch {
         let mut matches = Vec::new();
         for (&name, regex) in REGEXES.iter() {
             for capture in regex.captures_iter(password) {
-                let token = &capture[0];
+                let m = capture.get(0).unwrap();
                 let pattern = MatchPattern::Regex(
                     RegexPatternBuilder::default()
                         .regex_name(name)
@@ -601,12 +601,16 @@ impl Matcher for RegexMatch {
                         .build()
                         .unwrap(),
                 );
+                let (i, j) = (
+                    password[..m.start()].chars().count(),
+                    password[..m.end()].chars().count() - 1,
+                );
                 matches.push(
                     MatchBuilder::default()
                         .pattern(pattern)
-                        .token(token.to_string())
-                        .i(capture.get(0).unwrap().start())
-                        .j(capture.get(0).unwrap().end() - 1)
+                        .token(m.as_str().to_string())
+                        .i(i)
+                        .j(j)
                         .build()
                         .unwrap(),
                 );
@@ -619,7 +623,7 @@ impl Matcher for RegexMatch {
 lazy_static! {
     static ref REGEXES: HashMap<&'static str, Regex> = {
         let mut table = HashMap::with_capacity(1);
-        table.insert("recent_year", Regex::new(r"19\d\d|200\d|201\d").unwrap());
+        table.insert("recent_year", Regex::new(r"19\d\d|20\d\d").unwrap());
         table
     };
 }
