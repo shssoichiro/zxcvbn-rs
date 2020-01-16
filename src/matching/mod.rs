@@ -414,8 +414,10 @@ impl Matcher for RepeatMatch {
 
         let mut matches = Vec::new();
         let mut last_index = 0;
-        while last_index < password.chars().count() {
-            let token = password.chars().skip(last_index).collect::<String>();
+        let char_indexable_password = CharIndexableStr::from(password);
+        let char_count = password.chars().count();
+        while last_index < char_count {
+            let token = char_indexable_password.char_index(last_index..char_count);
             let greedy_matches = GREEDY_REGEX.captures(&token).unwrap();
             if greedy_matches.is_none() {
                 break;
@@ -644,6 +646,7 @@ struct DateMatch {}
 impl Matcher for DateMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
         let mut matches = Vec::new();
+        let char_indexable = CharIndexableStr::from(password);
 
         let password_len = password.chars().count();
         // dates without separators are between length 4 '1191' and 8 '11111991'
@@ -655,22 +658,17 @@ impl Matcher for DateMatch {
                 if j >= password_len {
                     break;
                 }
-                let token = password.chars().take(j + 1).skip(i).collect::<String>();
-                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(&token) {
+                let token_str = char_indexable.char_index(i..j + 1);
+                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(&token_str) {
                     continue;
                 }
+                let token = CharIndexableStr::from(token_str);
                 let mut candidates = Vec::new();
-                for &(k, l) in &DATE_SPLITS[&token.chars().count()] {
+                for &(k, l) in &DATE_SPLITS[&token.char_count()] {
                     let ymd = map_ints_to_ymd(
-                        token.chars().take(k).collect::<String>().parse().unwrap(),
-                        token
-                            .chars()
-                            .take(l)
-                            .skip(k)
-                            .collect::<String>()
-                            .parse()
-                            .unwrap(),
-                        token.chars().skip(l).collect::<String>().parse().unwrap(),
+                        token.char_index(0..k).parse().unwrap(),
+                        token.char_index(k..l).parse().unwrap(),
+                        token.char_index(l..j + 1).parse().unwrap(),
                     );
                     if let Some(ymd) = ymd {
                         candidates.push(ymd);
@@ -701,7 +699,7 @@ impl Matcher for DateMatch {
                 matches.push(
                     MatchBuilder::default()
                         .pattern(pattern)
-                        .token(token)
+                        .token(token_str.to_string())
                         .i(i)
                         .j(j)
                         .build()
@@ -717,9 +715,9 @@ impl Matcher for DateMatch {
                     if j >= password_len {
                         break;
                     }
-                    let token = password.chars().take(j + 1).skip(i).collect::<String>();
+                    let token = char_indexable.char_index(i..j + 1);
                     let (ymd, separator) = {
-                        let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(&token);
+                        let captures = MAYBE_DATE_WITH_SEPARATOR_REGEX.captures(token);
                         if captures.is_none() {
                             continue;
                         }
@@ -751,7 +749,7 @@ impl Matcher for DateMatch {
                         matches.push(
                             MatchBuilder::default()
                                 .pattern(pattern)
-                                .token(token)
+                                .token(token.to_string())
                                 .i(i)
                                 .j(j)
                                 .build()
