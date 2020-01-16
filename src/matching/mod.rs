@@ -1,8 +1,10 @@
+mod char_indexing;
 /// Defines potential patterns used to match against a password
 pub mod patterns;
 
 use self::patterns::*;
 use crate::frequency_lists::DictionaryType;
+use char_indexing::{CharIndexable, CharIndexableStr};
 use fancy_regex::Regex as FancyRegex;
 use itertools::Itertools;
 use regex::Regex;
@@ -40,13 +42,12 @@ pub(crate) fn omnimatch(password: &str, user_inputs: &HashMap<String, usize>) ->
         .flat_map(|x| x.get_matches(password, user_inputs))
         .collect();
     matches.sort_unstable_by(|a, b| {
-        use std::cmp::Ordering;
         let range1 = a.range_inclusive();
         let range2 = b.range_inclusive();
-        match range1.start().cmp(range2.start()) {
-            Ordering::Equal => range1.end().cmp(range2.end()),
-            other => other,
-        }
+        range1
+            .start()
+            .cmp(range2.start())
+            .then_with(|| range1.end().cmp(range2.end()))
     });
     matches
 }
@@ -99,43 +100,35 @@ struct DictionaryMatch {}
 
 impl Matcher for DictionaryMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
-        fn do_trials(
-            matches: &mut Vec<Match>,
-            password: &str,
-            dictionary_name: DictionaryType,
-            ranked_dict: &HashMap<&str, usize>,
-        ) {
+        let password_lower_string = password.to_lowercase();
+        let password_lower = CharIndexableStr::from(password_lower_string.as_str());
+
+        let do_trials = move |matches: &mut Vec<Match>,
+                              password: &str,
+                              dictionary_name: DictionaryType,
+                              ranked_dict: &HashMap<&str, usize>| {
             let len = password.chars().count();
-            let password_lower = password.to_lowercase();
             for i in 0..len {
                 for j in i..len {
-                    let word = password_lower
-                        .chars()
-                        .take(j + 1)
-                        .skip(i)
-                        .collect::<String>();
-                    if let Some(rank) = ranked_dict.get(&word.as_str()).cloned() {
-                        let pattern = MatchPattern::Dictionary(
-                            DictionaryPatternBuilder::default()
-                                .matched_word(word)
-                                .rank(rank)
-                                .dictionary_name(dictionary_name)
-                                .build()
-                                .unwrap(),
-                        );
-                        matches.push(
-                            MatchBuilder::default()
-                                .pattern(pattern)
-                                .i(i)
-                                .j(j)
-                                .token(password.chars().take(j + 1).skip(i).collect())
-                                .build()
-                                .unwrap(),
-                        );
+                    let word = password_lower.char_index(i..j + 1);
+                    if let Some(rank) = ranked_dict.get(word).cloned() {
+                        let pattern = MatchPattern::Dictionary(DictionaryPattern {
+                            matched_word: word.to_string(),
+                            rank,
+                            dictionary_name,
+                            ..DictionaryPattern::default()
+                        });
+                        matches.push(Match {
+                            pattern,
+                            i,
+                            j,
+                            token: password.chars().take(j + 1).skip(i).collect(),
+                            ..Match::default()
+                        });
                     }
                 }
             }
-        }
+        };
 
         let mut matches = Vec::new();
 
