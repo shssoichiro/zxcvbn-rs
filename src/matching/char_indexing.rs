@@ -9,6 +9,12 @@ pub struct CharIndexableStr<'a> {
     indices: Vec<usize>,
 }
 
+impl CharIndexableStr<'_> {
+    pub(crate) fn char_count(&self) -> usize {
+        self.indices.len()
+    }
+}
+
 impl<'a> From<&'a str> for CharIndexableStr<'a> {
     fn from(s: &'a str) -> Self {
         CharIndexableStr {
