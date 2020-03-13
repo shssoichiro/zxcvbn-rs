@@ -168,10 +168,7 @@ mod tests {
     use quickcheck::TestResult;
 
     #[cfg(target_arch = "wasm32")]
-    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
-
-    #[cfg(target_arch = "wasm32")]
-    wasm_bindgen_test_configure!(run_in_browser);
+    use wasm_bindgen_test::wasm_bindgen_test;
 
     quickcheck! {
         fn test_zxcvbn_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
@@ -197,6 +194,7 @@ mod tests {
         assert_eq!(entropy.score, 4);
         assert!(!entropy.sequence.is_empty());
         assert!(entropy.feedback.is_none());
+        assert!(entropy.calc_time.as_nanos() > 0);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]

@@ -374,19 +374,19 @@ impl Estimator for SpatialPattern {
 }
 
 lazy_static! {
-    static ref KEYBOARD_AVERAGE_DEGREE: usize = calc_average_degree(&crate::adjacency_graphs::QWERTY);
+    static ref KEYBOARD_AVERAGE_DEGREE: u64 = calc_average_degree(&crate::adjacency_graphs::QWERTY);
     // slightly different for keypad/mac keypad, but close enough
-    static ref KEYPAD_AVERAGE_DEGREE: usize = calc_average_degree(&crate::adjacency_graphs::KEYPAD);
-    static ref KEYBOARD_STARTING_POSITIONS: usize = crate::adjacency_graphs::QWERTY.len();
-    static ref KEYPAD_STARTING_POSITIONS: usize = crate::adjacency_graphs::KEYPAD.len();
+    static ref KEYPAD_AVERAGE_DEGREE: u64 = calc_average_degree(&crate::adjacency_graphs::KEYPAD);
+    static ref KEYBOARD_STARTING_POSITIONS: u64 = crate::adjacency_graphs::QWERTY.len() as u64;
+    static ref KEYPAD_STARTING_POSITIONS: u64 = crate::adjacency_graphs::KEYPAD.len() as u64;
 }
 
-fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> usize {
-    let sum: usize = graph
+fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> u64 {
+    let sum: u64 = graph
         .values()
-        .map(|neighbors| neighbors.iter().filter(|n| n.is_some()).count())
+        .map(|neighbors| neighbors.iter().filter(|n| n.is_some()).count() as u64)
         .sum();
-    sum / graph.len()
+    sum / graph.len() as u64
 }
 
 impl Estimator for RepeatPattern {
@@ -867,7 +867,7 @@ mod tests {
         let token = "zxcvbn";
         let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
             * *scoring::KEYBOARD_AVERAGE_DEGREE
-            * (token.len() - 1);
+            * (token.len() - 1) as u64;
         assert_eq!(p.estimate(token), base_guesses as u64);
     }
 
@@ -881,9 +881,9 @@ mod tests {
             .build()
             .unwrap();
         let token = "ZxCvbn";
-        let base_guesses = (*scoring::KEYBOARD_STARTING_POSITIONS
+        let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
             * *scoring::KEYBOARD_AVERAGE_DEGREE
-            * (token.len() - 1)) as u64
+            * (token.len() - 1) as u64
             * (scoring::n_ck(6, 2) + scoring::n_ck(6, 1));
         assert_eq!(p.estimate(token), base_guesses);
     }
@@ -900,7 +900,7 @@ mod tests {
         let token = "ZXCVBN";
         let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
             * *scoring::KEYBOARD_AVERAGE_DEGREE
-            * (token.len() - 1)
+            * (token.len() - 1) as u64
             * 2;
         assert_eq!(p.estimate(token), base_guesses as u64);
     }
