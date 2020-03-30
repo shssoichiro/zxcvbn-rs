@@ -108,7 +108,7 @@ quick_error! {
     pub enum ZxcvbnError {
         /// Indicates that a blank password was passed in to `zxcvbn`
         BlankPassword {
-            description("Zxcvbn cannot evaluate a blank password")
+            display("Zxcvbn cannot evaluate a blank password")
         }
     }
 }
