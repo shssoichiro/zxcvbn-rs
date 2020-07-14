@@ -15,6 +15,7 @@
 #![forbid(unsafe_code)]
 
 #[macro_use]
+#[cfg(feature = "builder")]
 extern crate derive_builder;
 
 #[macro_use]

@@ -46,8 +46,9 @@ impl Default for MatchPattern {
 }
 
 /// A match based on a word in a dictionary
-#[derive(Debug, Clone, PartialEq, Default, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "builder", derive(Builder))]
+#[cfg_attr(feature = "builder", builder(default))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct DictionaryPattern {
     /// Word that has been found in a dictionary.
@@ -73,8 +74,9 @@ pub struct DictionaryPattern {
 }
 
 /// A match based on keys being close to one another on the keyboard
-#[derive(Debug, Clone, PartialEq, Default, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "builder", derive(Builder))]
+#[cfg_attr(feature = "builder", builder(default))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct SpatialPattern {
     /// Name of the graph for which a spatial match has been found.
@@ -86,8 +88,9 @@ pub struct SpatialPattern {
 }
 
 /// A match based on repeating patterns
-#[derive(Debug, Clone, PartialEq, Default, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "builder", derive(Builder))]
+#[cfg_attr(feature = "builder", builder(default))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct RepeatPattern {
     /// Base token that repeats in the matched pattern.
@@ -101,8 +104,9 @@ pub struct RepeatPattern {
 }
 
 /// A match based on sequences of characters, e.g. "abcd"
-#[derive(Debug, Clone, PartialEq, Default, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "builder", derive(Builder))]
+#[cfg_attr(feature = "builder", builder(default))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct SequencePattern {
     /// Name of the sequence that was matched.
@@ -114,8 +118,9 @@ pub struct SequencePattern {
 }
 
 /// A match based on one of the regex patterns used in zxcvbn.
-#[derive(Debug, Clone, PartialEq, Default, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "builder", derive(Builder))]
+#[cfg_attr(feature = "builder", builder(default))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct RegexPattern {
     /// Name of the regular expression that was matched.
@@ -125,8 +130,9 @@ pub struct RegexPattern {
 }
 
 /// A match based on date patterns
-#[derive(Debug, Clone, PartialEq, Default, Builder)]
-#[builder(default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "builder", derive(Builder))]
+#[cfg_attr(feature = "builder", builder(default))]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 pub struct DatePattern {
     /// Separator of a date that was matched.
