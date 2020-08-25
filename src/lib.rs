@@ -113,7 +113,7 @@ quick_error! {
         }
         /// Indicates an error converting Duration to/from the standard library implementation
         DurationOutOfRange {
-            description("Zxcvbn calculation time created a duration out of range")
+            display("Zxcvbn calculation time created a duration out of range")
         }
     }
 }
