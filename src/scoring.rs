@@ -1,5 +1,5 @@
 use crate::matching::patterns::*;
-use crate::matching::{Match, MatchBuilder};
+use crate::matching::Match;
 use chrono::{Datelike, Local};
 use std::cmp;
 use std::collections::HashMap;
@@ -132,13 +132,12 @@ pub fn most_guessable_match_sequence(
 
     /// helper: make bruteforce match objects spanning i to j, inclusive.
     fn make_bruteforce_match(i: usize, j: usize, password: &str) -> Match {
-        MatchBuilder::default()
-            .pattern(MatchPattern::BruteForce)
-            .token(password.chars().take(j + 1).skip(i).collect())
-            .i(i)
-            .j(j)
-            .build()
-            .unwrap()
+        Match {
+            pattern: MatchPattern::BruteForce,
+            token: password.chars().take(j + 1).skip(i).collect(),
+            i, j,
+            ..Match::default()
+        }
     }
 
     /// helper: step backwards through optimal.m starting at the end,
@@ -463,7 +462,7 @@ impl Estimator for DatePattern {
 #[cfg(test)]
 mod tests {
     use crate::matching::patterns::*;
-    use crate::matching::MatchBuilder;
+    use crate::matching::Match;
     use crate::scoring;
     use crate::scoring::Estimator;
     use quickcheck::TestResult;
@@ -526,15 +525,12 @@ mod tests {
     #[test]
     fn test_search_returns_match_and_bruteforce_when_match_covers_prefix_of_password() {
         let password = "0123456789";
-        let m = MatchBuilder::default()
-            .i(0usize)
-            .j(5usize)
-            .guesses(Some(1))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
+        let m = Match {
+            i: 0, j: 5,
+            guesses: Some(1),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
 
         let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 2);
@@ -548,15 +544,12 @@ mod tests {
     #[test]
     fn test_search_returns_bruteforce_and_match_when_match_covers_a_suffix() {
         let password = "0123456789";
-        let m = MatchBuilder::default()
-            .i(3usize)
-            .j(9usize)
-            .guesses(Some(1))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
+        let m = Match {
+            i:3, j: 9,
+            guesses:Some(1),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
 
         let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 2);
@@ -570,15 +563,12 @@ mod tests {
     #[test]
     fn test_search_returns_bruteforce_and_match_when_match_covers_an_infix() {
         let password = "0123456789";
-        let m = MatchBuilder::default()
-            .i(1usize)
-            .j(8usize)
-            .guesses(Some(1))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
+        let m = Match {
+            i: 1, j: 8,
+            guesses: Some(1),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
 
         let result = scoring::most_guessable_match_sequence(password, &[m.clone()], true);
         assert_eq!(result.sequence.len(), 3);
@@ -596,24 +586,19 @@ mod tests {
     #[test]
     fn test_search_chooses_lower_guesses_match_given_two_matches_of_same_span() {
         let password = "0123456789";
-        let mut m0 = MatchBuilder::default()
-            .i(0usize)
-            .j(9usize)
-            .guesses(Some(1))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
-        let m1 = MatchBuilder::default()
-            .i(0usize)
-            .j(9usize)
-            .guesses(Some(2))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
+        let mut m0 = Match {
+            i: 0,
+            j: 9,
+            guesses: Some(1),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
+        let m1 = Match {
+            i: 0, j: 9,
+            guesses: Some(2),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
 
         let result =
             scoring::most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
@@ -630,33 +615,24 @@ mod tests {
     #[test]
     fn test_search_when_m0_covers_m1_and_m2_choose_m0_when_m0_lt_m1_t_m2_t_fact_2() {
         let password = "0123456789";
-        let m0 = MatchBuilder::default()
-            .i(0usize)
-            .j(9usize)
-            .guesses(Some(3))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
-        let m1 = MatchBuilder::default()
-            .i(0usize)
-            .j(3usize)
-            .guesses(Some(2))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
-        let m2 = MatchBuilder::default()
-            .i(4usize)
-            .j(9usize)
-            .guesses(Some(1))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
+        let m0 = Match {
+            i: 0, j: 9,
+            guesses: Some(3),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
+        let m1 = Match {
+            i: 0, j: 3,
+            guesses: Some(2),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
+        let m2 = Match {
+            i: 4, j: 9,
+            guesses: Some(1),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
 
         let result = scoring::most_guessable_match_sequence(
             password,
@@ -670,33 +646,24 @@ mod tests {
     #[test]
     fn test_search_when_m0_covers_m1_and_m2_choose_m1_m2_when_m0_gt_m1_t_m2_t_fact_2() {
         let password = "0123456789";
-        let m0 = MatchBuilder::default()
-            .i(0usize)
-            .j(9usize)
-            .guesses(Some(5))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
-        let m1 = MatchBuilder::default()
-            .i(0usize)
-            .j(3usize)
-            .guesses(Some(2))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
-        let m2 = MatchBuilder::default()
-            .i(4usize)
-            .j(9usize)
-            .guesses(Some(1))
-            .pattern(MatchPattern::Dictionary(
-                DictionaryPatternBuilder::default().build().unwrap(),
-            ))
-            .build()
-            .unwrap();
+        let m0 = Match {
+            i: 0, j: 9,
+            guesses: Some(5),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
+        let m1 = Match {
+            i: 0, j: 3,
+            guesses: Some(2),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
+        let m2 = Match {
+            i: 4, j: 9,
+            guesses: Some(1),
+            pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
+            ..Match::default()
+        };
 
         let result = scoring::most_guessable_match_sequence(
             password,
@@ -709,24 +676,24 @@ mod tests {
 
     #[test]
     fn test_calc_guesses_returns_guesses_when_cached() {
-        let mut m = MatchBuilder::default().guesses(Some(1)).build().unwrap();
+        let mut m = Match { guesses: Some(1), ..Match::default() };
         assert_eq!(scoring::estimate_guesses(&mut m, ""), 1);
     }
 
     #[test]
     fn test_calc_guesses_delegates_based_on_pattern() {
-        let mut p = DatePatternBuilder::default()
-            .year(1977)
-            .month(7)
-            .day(14)
-            .build()
-            .unwrap();
+        let mut p = DatePattern {
+            year: 1977,
+            month: 7,
+            day: 14,
+            ..DatePattern::default()
+        };
         let token = "1977";
-        let mut m = MatchBuilder::default()
-            .pattern(MatchPattern::Date(p.clone()))
-            .token(token.to_string())
-            .build()
-            .unwrap();
+        let mut m = Match {
+            pattern: MatchPattern::Date(p.clone()),
+            token: token.to_string(),
+            ..Match::default()
+        };
         assert_eq!(scoring::estimate_guesses(&mut m, token), p.estimate(token));
     }
 
@@ -750,12 +717,12 @@ mod tests {
                 false,
             )
             .guesses;
-            let mut p = RepeatPatternBuilder::default()
-                .base_token(base_token.to_string())
-                .base_guesses(base_guesses)
-                .repeat_count(repeat_count)
-                .build()
-                .unwrap();
+            let mut p = RepeatPattern {
+                base_token: base_token.to_string(),
+                base_guesses,
+                repeat_count,
+                ..RepeatPattern::default()
+            };
             let expected_guesses = base_guesses * repeat_count as u64;
             assert_eq!(p.estimate(token), expected_guesses);
         }
@@ -771,10 +738,9 @@ mod tests {
             ("ZYX", false, 4 * 3 * 2),   /* obvious start * len-3 * descending */
         ];
         for &(token, ascending, guesses) in &test_data {
-            let mut p = SequencePatternBuilder::default()
-                .ascending(ascending)
-                .build()
-                .unwrap();
+            let mut p = SequencePattern {
+                ascending, ..SequencePattern::default()
+            };
             assert_eq!(p.estimate(token), guesses);
         }
     }
@@ -782,33 +748,30 @@ mod tests {
     #[test]
     fn test_regex_guesses_lowercase() {
         let token = "aizocdk";
-        let mut p = RegexPatternBuilder::default()
-            .regex_name("alpha_lower")
-            .regex_match(vec![token.to_string()])
-            .build()
-            .unwrap();
+        let mut p = RegexPattern {
+            regex_name: "alpha_lower",
+            regex_match: vec![token.to_string()],
+        };
         assert_eq!(p.estimate(token), 26u64.pow(7));
     }
 
     #[test]
     fn test_regex_guesses_alphanumeric() {
         let token = "ag7C8";
-        let mut p = RegexPatternBuilder::default()
-            .regex_name("alphanumeric")
-            .regex_match(vec![token.to_string()])
-            .build()
-            .unwrap();
+        let mut p = RegexPattern {
+            regex_name: "alphanumeric",
+            regex_match: vec![token.to_string()],
+        };
         assert_eq!(p.estimate(token), 62u64.pow(5));
     }
 
     #[test]
     fn test_regex_guesses_distant_year() {
         let token = "1972";
-        let mut p = RegexPatternBuilder::default()
-            .regex_name("recent_year")
-            .regex_match(vec![token.to_string()])
-            .build()
-            .unwrap();
+        let mut p = RegexPattern {
+            regex_name: "recent_year",
+            regex_match: vec![token.to_string()],
+        };
         assert_eq!(
             p.estimate(token),
             (*scoring::REFERENCE_YEAR - 1972).abs() as u64
@@ -818,23 +781,21 @@ mod tests {
     #[test]
     fn test_regex_guesses_recent_year() {
         let token = "2005";
-        let mut p = RegexPatternBuilder::default()
-            .regex_name("recent_year")
-            .regex_match(vec![token.to_string()])
-            .build()
-            .unwrap();
+        let mut p = RegexPattern {
+            regex_name: "recent_year",
+            regex_match: vec![token.to_string()],
+        };
         assert_eq!(p.estimate(token), scoring::MIN_YEAR_SPACE as u64);
     }
 
     #[test]
     fn test_date_guesses() {
-        let mut p = DatePatternBuilder::default()
-            .separator("".to_string())
-            .year(1923)
-            .month(1)
-            .day(1)
-            .build()
-            .unwrap();
+        let mut p = DatePattern {
+            separator: "".to_string(),
+            year: 1923,
+            month: 1,
+            day: 1,
+        };
         let token = "1123";
         assert_eq!(
             p.estimate(token),
@@ -844,13 +805,12 @@ mod tests {
 
     #[test]
     fn test_date_guesses_recent_years_assume_min_year_space() {
-        let mut p = DatePatternBuilder::default()
-            .separator("/".to_string())
-            .year(2010)
-            .month(1)
-            .day(1)
-            .build()
-            .unwrap();
+        let mut p = DatePattern {
+            separator: "/".to_string(),
+            year: 2010,
+            month: 1,
+            day: 1,
+        };
         let token = "1/1/2010";
         assert_eq!(p.estimate(token), 365 * scoring::MIN_YEAR_SPACE as u64 * 4);
     }
@@ -858,12 +818,11 @@ mod tests {
     #[test]
     #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_no_turns_or_shifts() {
-        let mut p = SpatialPatternBuilder::default()
-            .graph("qwerty".to_string())
-            .turns(1)
-            .shifted_count(0)
-            .build()
-            .unwrap();
+        let mut p = SpatialPattern {
+            graph: "qwerty".to_string(),
+            turns: 1,
+            shifted_count: 0,
+        };
         let token = "zxcvbn";
         let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
             * *scoring::KEYBOARD_AVERAGE_DEGREE
@@ -874,12 +833,11 @@ mod tests {
     #[test]
     #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_adds_for_shifted_keys() {
-        let mut p = SpatialPatternBuilder::default()
-            .graph("qwerty".to_string())
-            .turns(1)
-            .shifted_count(2)
-            .build()
-            .unwrap();
+        let mut p = SpatialPattern {
+            graph: "qwerty".to_string(),
+            turns: 1,
+            shifted_count: 2,
+        };
         let token = "ZxCvbn";
         let base_guesses = (*scoring::KEYBOARD_STARTING_POSITIONS
             * *scoring::KEYBOARD_AVERAGE_DEGREE
@@ -891,12 +849,11 @@ mod tests {
     #[test]
     #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_doubles_when_all_shifted() {
-        let mut p = SpatialPatternBuilder::default()
-            .graph("qwerty".to_string())
-            .turns(1)
-            .shifted_count(6)
-            .build()
-            .unwrap();
+        let mut p = SpatialPattern {
+            graph: "qwerty".to_string(),
+            turns: 1,
+            shifted_count: 6,
+        };
         let token = "ZXCVBN";
         let base_guesses = *scoring::KEYBOARD_STARTING_POSITIONS
             * *scoring::KEYBOARD_AVERAGE_DEGREE
@@ -908,12 +865,11 @@ mod tests {
     #[test]
     #[allow(clippy::clone_on_copy)]
     fn test_spatial_guesses_accounts_for_turn_positions_directions_and_start_keys() {
-        let mut p = SpatialPatternBuilder::default()
-            .graph("qwerty".to_string())
-            .turns(3)
-            .shifted_count(0)
-            .build()
-            .unwrap();
+        let mut p = SpatialPattern {
+            graph: "qwerty".to_string(),
+            turns: 3,
+            shifted_count: 0,
+        };
         let token = "zxcft6yh";
         let guesses: u64 = (2..(token.len() + 1))
             .map(|i| {
@@ -932,31 +888,29 @@ mod tests {
 
     #[test]
     fn test_dictionary_base_guesses_equals_rank() {
-        let mut p = DictionaryPatternBuilder::default()
-            .rank(32)
-            .build()
-            .unwrap();
+        let mut p = DictionaryPattern {
+            rank: 32, ..DictionaryPattern::default()
+        };
         let token = "aaaaa";
         assert_eq!(p.estimate(token), 32);
     }
 
     #[test]
     fn test_dictionary_extra_guesses_added_for_caps() {
-        let mut p = DictionaryPatternBuilder::default()
-            .rank(32)
-            .build()
-            .unwrap();
+        let mut p = DictionaryPattern {
+            rank: 32, ..DictionaryPattern::default()
+        };
         let token = "AAAaaa";
         assert_eq!(p.estimate(token), 32 * scoring::uppercase_variations(token));
     }
 
     #[test]
     fn test_dictionary_guesses_doubled_if_reversed() {
-        let mut p = DictionaryPatternBuilder::default()
-            .rank(32)
-            .reversed(true)
-            .build()
-            .unwrap();
+        let mut p = DictionaryPattern {
+            rank: 32,
+            reversed: true,
+            ..DictionaryPattern::default()
+        };
         let token = "aaa";
         assert_eq!(p.estimate(token), 32 * 2);
     }
@@ -965,12 +919,12 @@ mod tests {
     fn test_dictionary_guesses_added_for_l33t() {
         let mut subs = HashMap::with_capacity(1);
         subs.insert('@', 'a');
-        let mut p = DictionaryPatternBuilder::default()
-            .rank(32)
-            .l33t(true)
-            .sub(Some(subs))
-            .build()
-            .unwrap();
+        let mut p = DictionaryPattern {
+            rank: 32,
+            l33t: true,
+            sub: Some(subs),
+            ..DictionaryPattern::default()
+        };
         let token = "aaa@@@";
         let expected = 32 * scoring::l33t_variations(&p, token);
         assert_eq!(p.estimate(token), expected);
@@ -980,12 +934,12 @@ mod tests {
     fn test_dictionary_guesses_added_for_caps_and_l33t() {
         let mut subs = HashMap::with_capacity(1);
         subs.insert('@', 'a');
-        let mut p = DictionaryPatternBuilder::default()
-            .rank(32)
-            .l33t(true)
-            .sub(Some(subs))
-            .build()
-            .unwrap();
+        let mut p = DictionaryPattern {
+            rank: 32,
+            l33t: true,
+            sub: Some(subs),
+            ..DictionaryPattern::default()
+        };
         let token = "AaA@@@";
         let expected =
             32 * scoring::l33t_variations(&p, token) * scoring::uppercase_variations(token);
@@ -1018,10 +972,10 @@ mod tests {
 
     #[test]
     fn test_l33t_variations_for_non_l33t() {
-        let p = DictionaryPatternBuilder::default()
-            .l33t(false)
-            .build()
-            .unwrap();
+        let p = DictionaryPattern {
+            l33t: false,
+            ..DictionaryPattern::default()
+        };
         assert_eq!(scoring::l33t_variations(&p, ""), 1);
     }
 
@@ -1107,11 +1061,11 @@ mod tests {
             ),
         ];
         for &(word, variants, ref sub) in &test_data {
-            let p = DictionaryPatternBuilder::default()
-                .sub(Some(sub.clone()))
-                .l33t(!sub.is_empty())
-                .build()
-                .unwrap();
+            let p = DictionaryPattern {
+                sub: Some(sub.clone()),
+                l33t: !sub.is_empty(),
+                ..DictionaryPattern::default()
+            };
             assert_eq!(scoring::l33t_variations(&p, word), variants);
         }
     }
