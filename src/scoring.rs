@@ -135,7 +135,8 @@ pub fn most_guessable_match_sequence(
         Match {
             pattern: MatchPattern::BruteForce,
             token: password.chars().take(j + 1).skip(i).collect(),
-            i, j,
+            i,
+            j,
             ..Match::default()
         }
     }
@@ -526,7 +527,8 @@ mod tests {
     fn test_search_returns_match_and_bruteforce_when_match_covers_prefix_of_password() {
         let password = "0123456789";
         let m = Match {
-            i: 0, j: 5,
+            i: 0,
+            j: 5,
             guesses: Some(1),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
@@ -545,8 +547,9 @@ mod tests {
     fn test_search_returns_bruteforce_and_match_when_match_covers_a_suffix() {
         let password = "0123456789";
         let m = Match {
-            i:3, j: 9,
-            guesses:Some(1),
+            i: 3,
+            j: 9,
+            guesses: Some(1),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
         };
@@ -564,7 +567,8 @@ mod tests {
     fn test_search_returns_bruteforce_and_match_when_match_covers_an_infix() {
         let password = "0123456789";
         let m = Match {
-            i: 1, j: 8,
+            i: 1,
+            j: 8,
             guesses: Some(1),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
@@ -594,7 +598,8 @@ mod tests {
             ..Match::default()
         };
         let m1 = Match {
-            i: 0, j: 9,
+            i: 0,
+            j: 9,
             guesses: Some(2),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
@@ -616,19 +621,22 @@ mod tests {
     fn test_search_when_m0_covers_m1_and_m2_choose_m0_when_m0_lt_m1_t_m2_t_fact_2() {
         let password = "0123456789";
         let m0 = Match {
-            i: 0, j: 9,
+            i: 0,
+            j: 9,
             guesses: Some(3),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
         };
         let m1 = Match {
-            i: 0, j: 3,
+            i: 0,
+            j: 3,
             guesses: Some(2),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
         };
         let m2 = Match {
-            i: 4, j: 9,
+            i: 4,
+            j: 9,
             guesses: Some(1),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
@@ -647,19 +655,22 @@ mod tests {
     fn test_search_when_m0_covers_m1_and_m2_choose_m1_m2_when_m0_gt_m1_t_m2_t_fact_2() {
         let password = "0123456789";
         let m0 = Match {
-            i: 0, j: 9,
+            i: 0,
+            j: 9,
             guesses: Some(5),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
         };
         let m1 = Match {
-            i: 0, j: 3,
+            i: 0,
+            j: 3,
             guesses: Some(2),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
         };
         let m2 = Match {
-            i: 4, j: 9,
+            i: 4,
+            j: 9,
             guesses: Some(1),
             pattern: MatchPattern::Dictionary(DictionaryPattern::default()),
             ..Match::default()
@@ -676,7 +687,10 @@ mod tests {
 
     #[test]
     fn test_calc_guesses_returns_guesses_when_cached() {
-        let mut m = Match { guesses: Some(1), ..Match::default() };
+        let mut m = Match {
+            guesses: Some(1),
+            ..Match::default()
+        };
         assert_eq!(scoring::estimate_guesses(&mut m, ""), 1);
     }
 
@@ -739,7 +753,8 @@ mod tests {
         ];
         for &(token, ascending, guesses) in &test_data {
             let mut p = SequencePattern {
-                ascending, ..SequencePattern::default()
+                ascending,
+                ..SequencePattern::default()
             };
             assert_eq!(p.estimate(token), guesses);
         }
@@ -889,7 +904,8 @@ mod tests {
     #[test]
     fn test_dictionary_base_guesses_equals_rank() {
         let mut p = DictionaryPattern {
-            rank: 32, ..DictionaryPattern::default()
+            rank: 32,
+            ..DictionaryPattern::default()
         };
         let token = "aaaaa";
         assert_eq!(p.estimate(token), 32);
@@ -898,7 +914,8 @@ mod tests {
     #[test]
     fn test_dictionary_extra_guesses_added_for_caps() {
         let mut p = DictionaryPattern {
-            rank: 32, ..DictionaryPattern::default()
+            rank: 32,
+            ..DictionaryPattern::default()
         };
         let token = "AAAaaa";
         assert_eq!(p.estimate(token), 32 * scoring::uppercase_variations(token));

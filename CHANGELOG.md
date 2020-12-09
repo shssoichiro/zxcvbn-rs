@@ -1,3 +1,8 @@
+**Version 2.1.0**
+ - [Feature] Add support for wasm
+ - Deprecate the usage of builders (it will still work for now, but will be removed in the next major release)
+ - Various performance improvements and dependency upgrades
+
 **Version 2.0.1**
  - Fix overflow bugs that may cause wrong results on very complex passwords
  - Fix a panic that could occur on passwords with multibyte unicode characters

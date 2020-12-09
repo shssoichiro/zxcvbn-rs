@@ -342,7 +342,7 @@ fn spatial_match_helper(
             let mut found = false;
             let found_direction;
             let mut cur_direction = -1;
-            let adjacents = graph.get(&prev_char).cloned().unwrap_or_else(|| vec![]);
+            let adjacents = graph.get(&prev_char).cloned().unwrap_or_else(Vec::new);
             // consider growing pattern by one character if j hasn't gone over the edge.
             if j < password_len {
                 let cur_char = password.chars().nth(j).unwrap();
@@ -377,19 +377,18 @@ fn spatial_match_helper(
                 // otherwise push the pattern discovered so far, if any...
                 if j - i > 2 {
                     // Don't consider length 1 or 2 chains
-                    let pattern = MatchPattern::Spatial(
-                        SpatialPattern {
-                            graph: graph_name.to_string(),
-                            turns, shifted_count,
-                        }
-                    );
-                    matches.push(
-                        Match {
-                            pattern, i, j: j - 1,
-                            token: password.chars().take(j).skip(i).collect(),
-                            ..Match::default()
-                        }
-                    );
+                    let pattern = MatchPattern::Spatial(SpatialPattern {
+                        graph: graph_name.to_string(),
+                        turns,
+                        shifted_count,
+                    });
+                    matches.push(Match {
+                        pattern,
+                        i,
+                        j: j - 1,
+                        token: password.chars().take(j).skip(i).collect(),
+                        ..Match::default()
+                    });
                 }
                 i = j;
                 break;
@@ -463,22 +462,20 @@ impl Matcher for RepeatMatch {
             );
             let base_matches = base_analysis.sequence;
             let base_guesses = base_analysis.guesses;
-            let pattern = MatchPattern::Repeat(
-                RepeatPattern {
-                    repeat_count:
-                        m4tch.get(0).unwrap().as_str().chars().count() / base_token.chars().count(),
-                    base_token,
-                    base_guesses,
-                    base_matches,
-                }
-            );
-            matches.push(
-                Match {
-                    pattern, i, j,
-                    token: m4tch.get(0).unwrap().as_str().to_string(),
-                    ..Match::default()
-                }
-            );
+            let pattern = MatchPattern::Repeat(RepeatPattern {
+                repeat_count: m4tch.get(0).unwrap().as_str().chars().count()
+                    / base_token.chars().count(),
+                base_token,
+                base_guesses,
+                base_matches,
+            });
+            matches.push(Match {
+                pattern,
+                i,
+                j,
+                token: m4tch.get(0).unwrap().as_str().to_string(),
+                ..Match::default()
+            });
             last_index = j + 1;
         }
         matches
@@ -519,18 +516,18 @@ impl Matcher for SequenceMatch {
                     // (this could be improved)
                     ("unicode", 26)
                 };
-                let pattern = MatchPattern::Sequence(
-                    SequencePattern {
-                        sequence_name, sequence_space,
-                        ascending: delta > 0,
-                    }
-                );
-                matches.push(
-                    Match {
-                        pattern, i, j, token,
-                        ..Match::default()
-                    }
-                );
+                let pattern = MatchPattern::Sequence(SequencePattern {
+                    sequence_name,
+                    sequence_space,
+                    ascending: delta > 0,
+                });
+                matches.push(Match {
+                    pattern,
+                    i,
+                    j,
+                    token,
+                    ..Match::default()
+                });
             }
         }
 
@@ -572,28 +569,24 @@ impl Matcher for RegexMatch {
         for (&name, regex) in REGEXES.iter() {
             for capture in regex.captures_iter(password) {
                 let m = capture.get(0).unwrap();
-                let pattern = MatchPattern::Regex(
-                    RegexPattern {
-                        regex_name: name,
-                        regex_match:
-                            capture
-                                .iter()
-                                .map(|x| x.unwrap().as_str().to_string())
-                                .collect(),
-                    }
-                );
+                let pattern = MatchPattern::Regex(RegexPattern {
+                    regex_name: name,
+                    regex_match: capture
+                        .iter()
+                        .map(|x| x.unwrap().as_str().to_string())
+                        .collect(),
+                });
                 let (i, j) = (
                     password[..m.start()].chars().count(),
                     password[..m.end()].chars().count() - 1,
                 );
-                matches.push(
-                    Match {
-                        pattern,
-                        token: m.as_str().to_string(),
-                        i, j,
-                        ..Match::default()
-                    }
-                );
+                matches.push(Match {
+                    pattern,
+                    token: m.as_str().to_string(),
+                    i,
+                    j,
+                    ..Match::default()
+                });
             }
         }
         matches
@@ -672,22 +665,19 @@ impl Matcher for DateMatch {
                     (candidate.0 - *super::scoring::REFERENCE_YEAR).abs()
                 };
                 let best_candidate = candidates.iter().min_by_key(|&c| metric(c)).unwrap();
-                let pattern = MatchPattern::Date(
-                    DatePattern {
-                        separator: String::new(),
-                        year: best_candidate.0,
-                        month: best_candidate.1,
-                        day: best_candidate.2,
-                    }
-                );
-                matches.push(
-                    Match {
-                        pattern,
-                        token: token_str.to_string(),
-                        i, j,
-                        ..Match::default()
-                    }
-                );
+                let pattern = MatchPattern::Date(DatePattern {
+                    separator: String::new(),
+                    year: best_candidate.0,
+                    month: best_candidate.1,
+                    day: best_candidate.2,
+                });
+                matches.push(Match {
+                    pattern,
+                    token: token_str.to_string(),
+                    i,
+                    j,
+                    ..Match::default()
+                });
             }
         }
 
@@ -720,22 +710,19 @@ impl Matcher for DateMatch {
                         )
                     };
                     if let Some(ymd) = ymd {
-                        let pattern = MatchPattern::Date(
-                            DatePattern {
-                                separator,
-                                year: ymd.0,
-                                month: ymd.1,
-                                day: ymd.2,
-                            }
-                        );
-                        matches.push(
-                            Match {
-                                pattern,
-                                token: token.to_string(),
-                                i, j,
-                                ..Match::default()
-                            }
-                        );
+                        let pattern = MatchPattern::Date(DatePattern {
+                            separator,
+                            year: ymd.0,
+                            month: ymd.1,
+                            day: ymd.2,
+                        });
+                        matches.push(Match {
+                            pattern,
+                            token: token.to_string(),
+                            i,
+                            j,
+                            ..Match::default()
+                        });
                     }
                 }
             }
