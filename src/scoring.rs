@@ -611,8 +611,7 @@ mod tests {
         assert_eq!(result.sequence[0], m0);
         // make sure ordering doesn't matter
         m0.guesses = Some(3);
-        let result =
-            scoring::most_guessable_match_sequence(password, &[m0.clone(), m1.clone()], true);
+        let result = scoring::most_guessable_match_sequence(password, &[m0, m1.clone()], true);
         assert_eq!(result.sequence.len(), 1);
         assert_eq!(result.sequence[0], m1);
     }
@@ -642,11 +641,7 @@ mod tests {
             ..Match::default()
         };
 
-        let result = scoring::most_guessable_match_sequence(
-            password,
-            &[m0.clone(), m1.clone(), m2.clone()],
-            true,
-        );
+        let result = scoring::most_guessable_match_sequence(password, &[m0.clone(), m1, m2], true);
         assert_eq!(result.guesses, 3);
         assert_eq!(result.sequence, vec![m0]);
     }
@@ -676,11 +671,8 @@ mod tests {
             ..Match::default()
         };
 
-        let result = scoring::most_guessable_match_sequence(
-            password,
-            &[m0.clone(), m1.clone(), m2.clone()],
-            true,
-        );
+        let result =
+            scoring::most_guessable_match_sequence(password, &[m0, m1.clone(), m2.clone()], true);
         assert_eq!(result.guesses, 4);
         assert_eq!(result.sequence, vec![m1, m2]);
     }

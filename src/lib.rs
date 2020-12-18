@@ -228,7 +228,7 @@ mod tests {
         let password = "TestMeNow!";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 372_010_000);
-        assert_eq!(entropy.guesses_log10, 8.57055461430783);
+        assert!((entropy.guesses_log10 - 8.57055461430783).abs() < f64::EPSILON);
         assert_eq!(entropy.score, 3);
     }
 
@@ -238,7 +238,7 @@ mod tests {
         let password = "hey<123";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 1_010_000);
-        assert_eq!(entropy.guesses_log10, 6.004321373782642);
+        assert!((entropy.guesses_log10 - 6.004321373782642).abs() < f64::EPSILON);
         assert_eq!(entropy.score, 2);
     }
 
