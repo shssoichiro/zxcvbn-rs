@@ -1,3 +1,6 @@
+**Version 2.1.1**
+ - Do not download and build wasm dependencies if not building for wasm
+
 **Version 2.1.0**
  - [Feature] Add support for wasm
  - Deprecate the usage of builders (it will still work for now, but will be removed in the next major release)
