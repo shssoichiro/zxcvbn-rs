@@ -870,7 +870,7 @@ mod tests {
             ("abc", chr_map.clone(), "ABc"),
             ("aa", chr_map.clone(), "AA"),
             ("abab", chr_map.clone(), "ABAB"),
-            ("", chr_map.clone(), ""),
+            ("", chr_map, ""),
             ("", HashMap::new(), ""),
             ("abc", HashMap::new(), "abc"),
         ];
