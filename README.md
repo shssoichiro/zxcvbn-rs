@@ -50,7 +50,7 @@ use zxcvbn::zxcvbn;
 
 fn main() {
     let estimate = zxcvbn("correcthorsebatterystaple", &[]).unwrap();
-    println!("{}", estimate.score); // 3
+    println!("{}", estimate.score()); // 3
 }
 ```
 
