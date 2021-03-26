@@ -80,7 +80,7 @@ lazy_static! {
     };
 }
 
-trait Matcher: Send + Sync {
+pub trait Matcher: Send + Sync {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match>;
 }
 
@@ -97,7 +97,7 @@ lazy_static! {
     ];
 }
 
-struct DictionaryMatch {}
+pub struct DictionaryMatch {}
 
 impl Matcher for DictionaryMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -147,7 +147,7 @@ impl Matcher for DictionaryMatch {
     }
 }
 
-struct ReverseDictionaryMatch {}
+pub struct ReverseDictionaryMatch {}
 
 impl Matcher for ReverseDictionaryMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -170,7 +170,7 @@ impl Matcher for ReverseDictionaryMatch {
     }
 }
 
-struct L33tMatch {}
+pub struct L33tMatch {}
 
 impl Matcher for L33tMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -298,7 +298,7 @@ fn enumerate_l33t_replacements(table: &HashMap<char, Vec<char>>) -> Vec<HashMap<
     .collect()
 }
 
-struct SpatialMatch {}
+pub struct SpatialMatch {}
 
 impl Matcher for SpatialMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -398,7 +398,7 @@ fn spatial_match_helper(
     matches
 }
 
-struct RepeatMatch {}
+pub struct RepeatMatch {}
 
 impl Matcher for RepeatMatch {
     fn get_matches(&self, password: &str, user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -496,7 +496,7 @@ const MAX_DELTA: i32 = 5;
 ///
 /// expected result:
 /// `[(i, j, delta), ...] = [(0, 3, 1), (5, 7, -2), (8, 9, 1)]`
-struct SequenceMatch {}
+pub struct SequenceMatch {}
 
 impl Matcher for SequenceMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -561,7 +561,7 @@ impl Matcher for SequenceMatch {
     }
 }
 
-struct RegexMatch {}
+pub struct RegexMatch {}
 
 impl Matcher for RegexMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
@@ -619,7 +619,7 @@ lazy_static! {
 /// note: instead of using a lazy or greedy regex to find many dates over the full string,
 /// this uses a ^...$ regex against every substring of the password -- less performant but leads
 /// to every possible date match.
-struct DateMatch {}
+pub struct DateMatch {}
 
 impl Matcher for DateMatch {
     fn get_matches(&self, password: &str, _user_inputs: &HashMap<String, usize>) -> Vec<Match> {
