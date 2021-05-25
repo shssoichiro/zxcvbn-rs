@@ -596,7 +596,7 @@ impl Matcher for RegexMatch {
 lazy_static! {
     static ref REGEXES: HashMap<&'static str, Regex> = {
         let mut table = HashMap::with_capacity(1);
-        table.insert("recent_year", Regex::new(r"19\d\d|20\d\d").unwrap());
+        table.insert("recent_year", Regex::new(r"19[0-9]{2}|20[0-9]{2}").unwrap());
         table
     };
 }
@@ -847,8 +847,8 @@ lazy_static! {
         table.insert(8, vec![(2, 4), (4, 6)]);
         table
     };
-    static ref MAYBE_DATE_NO_SEPARATOR_REGEX: Regex = Regex::new(r"^\d{4,8}$").unwrap();
-    static ref MAYBE_DATE_WITH_SEPARATOR_REGEX: Regex = Regex::new(r"^(\d{1,4})([\s/\\_.-])(\d{1,2})([\s/\\_.-])(\d{1,4})$").unwrap();
+    static ref MAYBE_DATE_NO_SEPARATOR_REGEX: Regex = Regex::new(r"^[0-9]{4,8}$").unwrap();
+    static ref MAYBE_DATE_WITH_SEPARATOR_REGEX: Regex = Regex::new(r"^([0-9]{1,4})([\s/\\_.-])([0-9]{1,2})([\s/\\_.-])([0-9]{1,4})$").unwrap();
 }
 
 #[cfg(test)]
