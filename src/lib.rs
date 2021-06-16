@@ -122,11 +122,6 @@ quick_error! {
 /// Takes a password string and optionally a list of user-supplied inputs
 /// (e.g. username, email, first name) and calculates the strength of the password
 /// based on entropy, using a number of different factors.
-///
-/// Currently zxcvbn only supports ASCII input. Non-ASCII passwords can generally be considered
-/// to be safe, if they are of a reasonable length (8+ chars), so you should handle them as
-/// strong passwords, but this library is not able to generate entropy information for them
-/// at this time.
 pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnError> {
     if password.is_empty() {
         return Err(ZxcvbnError::BlankPassword);
