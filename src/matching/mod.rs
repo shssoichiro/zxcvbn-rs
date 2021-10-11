@@ -414,11 +414,11 @@ impl Matcher for RepeatMatch {
         let char_count = password.chars().count();
         while last_index < char_count {
             let token = char_indexable_password.char_index(last_index..char_count);
-            let greedy_matches = GREEDY_REGEX.captures(&token).unwrap();
+            let greedy_matches = GREEDY_REGEX.captures(token).unwrap();
             if greedy_matches.is_none() {
                 break;
             }
-            let lazy_matches = LAZY_REGEX.captures(&token).unwrap();
+            let lazy_matches = LAZY_REGEX.captures(token).unwrap();
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
             let m4tch;
@@ -637,7 +637,7 @@ impl Matcher for DateMatch {
                     break;
                 }
                 let token_str = char_indexable.char_index(i..j + 1);
-                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(&token_str) {
+                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(token_str) {
                     continue;
                 }
                 let token = CharIndexableStr::from(token_str);
@@ -802,7 +802,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i32, i8, i8)>
 /// Takes two ints and returns them in a (m, d) tuple
 fn map_ints_to_md(first: u16, second: u16) -> Option<(i8, i8)> {
     for &(d, m) in &[(first, second), (second, first)] {
-        if 1 <= d && d <= 31 && 1 <= m && m <= 12 {
+        if (1..=31).contains(&d) && (1..=12).contains(&m) {
             return Some((m as i8, d as i8));
         }
     }
