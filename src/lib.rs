@@ -1,15 +1,4 @@
-//! `zxcvbn` is a password strength estimator based off of Dropbox's zxcvbn library.
-//!
-//! Through pattern matching and conservative estimation, it recognizes and weighs
-//! 30k common passwords, common names and surnames according to US census data,
-//! popular English words from Wikipedia and US television and movies, and other
-//! common patterns like dates, repeats (aaa), sequences (abcd),
-//! keyboard patterns (qwertyuiop), and l33t speak.
-//!
-//! Consider using zxcvbn as an algorithmic alternative to password composition policy —
-//! it is more secure, flexible, and usable when sites require
-//! a minimal complexity score in place of annoying rules like
-//! "passwords must contain three of {lower, upper, numbers, symbols}".
+#![doc = include_str!("../README.md")]
 #![recursion_limit = "128"]
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
