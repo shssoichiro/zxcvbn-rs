@@ -1,8 +1,8 @@
 use crate::matching::patterns::*;
 use crate::matching::Match;
-use chrono::{Datelike, Local};
 use std::cmp;
 use std::collections::HashMap;
+use time::OffsetDateTime;
 
 #[derive(Debug, Clone)]
 pub struct GuessCalculation {
@@ -29,7 +29,7 @@ struct Optimal {
 }
 
 lazy_static! {
-    pub(crate) static ref REFERENCE_YEAR: i32 = Local::today().year();
+    pub(crate) static ref REFERENCE_YEAR: i32 = OffsetDateTime::now_utc().year();
 }
 const MIN_YEAR_SPACE: i32 = 20;
 const BRUTEFORCE_CARDINALITY: u64 = 10;

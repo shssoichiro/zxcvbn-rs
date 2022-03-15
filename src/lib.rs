@@ -17,8 +17,8 @@ extern crate serde;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
-use chrono::Utc;
-use std::time::Duration;
+use std::{convert::TryFrom, time::Duration};
+use time::OffsetDateTime;
 
 #[cfg(test)]
 #[macro_use]
@@ -116,7 +116,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         return Err(ZxcvbnError::BlankPassword);
     }
 
-    let start_time = Utc::now();
+    let start_time = OffsetDateTime::now_utc();
 
     // Only evaluate the first 100 characters of the input.
     // This prevents potential DoS attacks from sending extremely long input strings.
@@ -130,8 +130,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
 
     let matches = matching::omnimatch(&password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(&password, &matches, false);
-    let calc_time = (Utc::now() - start_time)
-        .to_std()
+    let calc_time = Duration::try_from(OffsetDateTime::now_utc() - start_time)
         .map_err(|_| ZxcvbnError::DurationOutOfRange)?;
     let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &matches);
