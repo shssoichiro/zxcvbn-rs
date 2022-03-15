@@ -1,3 +1,10 @@
+**Version 2.2.0**
+ - Fix an issue where a less specific feedback would be given
+   when a more specific feedback was available. (https://github.com/shssoichiro/zxcvbn-rs/issues/54)[#54]
+ - Migrate to Rust edition 2021
+ - Migrate from `chrono` crate to `time` crate
+ - Update `fancy-regex` to 0.8
+
 **Version 2.1.1**
  - Do not download and build wasm dependencies if not building for wasm
 
