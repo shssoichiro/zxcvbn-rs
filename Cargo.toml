@@ -7,7 +7,7 @@ license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
 version = "2.1.2"
-edition = "2018"
+edition = "2021"
 
 [badges]
 travis-ci = { repository = "shssoichiro/zxcvbn-rs", branch = "master" }
