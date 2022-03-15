@@ -133,7 +133,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
     let calc_time = Duration::try_from(OffsetDateTime::now_utc() - start_time)
         .map_err(|_| ZxcvbnError::DurationOutOfRange)?;
     let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
-    let feedback = feedback::get_feedback(score, &matches);
+    let feedback = feedback::get_feedback(score, &result.sequence);
 
     Ok(Entropy {
         guesses: result.guesses,
