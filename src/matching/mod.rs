@@ -414,11 +414,11 @@ impl Matcher for RepeatMatch {
         let char_count = password.chars().count();
         while last_index < char_count {
             let token = char_indexable_password.char_index(last_index..char_count);
-            let greedy_matches = GREEDY_REGEX.captures(token).unwrap();
+            let greedy_matches = GREEDY_REGEX.captures(&token).unwrap();
             if greedy_matches.is_none() {
                 break;
             }
-            let lazy_matches = LAZY_REGEX.captures(token).unwrap();
+            let lazy_matches = LAZY_REGEX.captures(&token).unwrap();
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
             let m4tch;
@@ -637,7 +637,7 @@ impl Matcher for DateMatch {
                     break;
                 }
                 let token_str = char_indexable.char_index(i..j + 1);
-                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(token_str) {
+                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(&token_str) {
                     continue;
                 }
                 let token = CharIndexableStr::from(token_str);
@@ -802,7 +802,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i32, i8, i8)>
 /// Takes two ints and returns them in a (m, d) tuple
 fn map_ints_to_md(first: u16, second: u16) -> Option<(i8, i8)> {
     for &(d, m) in &[(first, second), (second, first)] {
-        if (1..=31).contains(&d) && (1..=12).contains(&m) {
+        if 1 <= d && d <= 31 && 1 <= m && m <= 12 {
             return Some((m as i8, d as i8));
         }
     }
@@ -1442,8 +1442,10 @@ mod tests {
 
     #[test]
     fn test_date_matches_year_closest_to_reference_year() {
-        use chrono::{Datelike, Local};
-        let password = format!("1115{}", Local::today().year() % 100);
+        use time::OffsetDateTime;
+
+        let now = OffsetDateTime::now_utc();
+        let password = format!("1115{}", now.year() % 100);
         let matches = (matching::DateMatch {}).get_matches(&password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == password).unwrap();
         assert_eq!(m.i, 0);
@@ -1453,7 +1455,7 @@ mod tests {
         } else {
             panic!("Wrong match pattern")
         };
-        assert_eq!(p.year, Local::today().year());
+        assert_eq!(p.year, now.year());
         assert_eq!(p.month, 11);
         assert_eq!(p.day, 15);
         assert_eq!(p.separator, "".to_string());

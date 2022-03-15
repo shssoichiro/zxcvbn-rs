@@ -20,7 +20,7 @@ itertools = "0.10.0"
 lazy_static = "1.3"
 quick-error = "2.0"
 regex = "1"
-chrono = { version = "0.4.7", default-features = false, features = ["clock", "std"] }
+time = { version = "0.3", features = ["local-offset"] }
 
 [dependencies.serde]
 optional = true
@@ -42,7 +42,6 @@ wasm-bindgen-test = "0.3"
 default = ["builder"]
 ser = ["serde", "serde_derive"]
 builder = ["derive_builder"]
-wasmbind = ["chrono/wasmbind"]
 
 [profile.test]
 opt-level = 2
