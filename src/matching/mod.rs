@@ -342,7 +342,7 @@ fn spatial_match_helper(
             let mut found = false;
             let found_direction;
             let mut cur_direction = -1;
-            let adjacents = graph.get(&prev_char).cloned().unwrap_or_else(Vec::new);
+            let adjacents = graph.get(&prev_char).cloned().unwrap_or_default();
             // consider growing pattern by one character if j hasn't gone over the edge.
             if j < password_len {
                 let cur_char = password.chars().nth(j).unwrap();
@@ -414,11 +414,11 @@ impl Matcher for RepeatMatch {
         let char_count = password.chars().count();
         while last_index < char_count {
             let token = char_indexable_password.char_index(last_index..char_count);
-            let greedy_matches = GREEDY_REGEX.captures(&token).unwrap();
+            let greedy_matches = GREEDY_REGEX.captures(token).unwrap();
             if greedy_matches.is_none() {
                 break;
             }
-            let lazy_matches = LAZY_REGEX.captures(&token).unwrap();
+            let lazy_matches = LAZY_REGEX.captures(token).unwrap();
             let greedy_matches = greedy_matches.unwrap();
             let lazy_matches = lazy_matches.unwrap();
             let m4tch;
@@ -637,7 +637,7 @@ impl Matcher for DateMatch {
                     break;
                 }
                 let token_str = char_indexable.char_index(i..j + 1);
-                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(&token_str) {
+                if !MAYBE_DATE_NO_SEPARATOR_REGEX.is_match(token_str) {
                     continue;
                 }
                 let token = CharIndexableStr::from(token_str);
@@ -773,7 +773,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i32, i8, i8)>
     // first look for a four digit year: yyyy + daymonth or daymonth + yyyy
     let possible_year_splits = &[(third, first, second), (first, second, third)];
     for &(year, second, third) in possible_year_splits {
-        if DATE_MIN_YEAR <= year && year <= DATE_MAX_YEAR {
+        if (DATE_MIN_YEAR..=DATE_MAX_YEAR).contains(&year) {
             let dm = map_ints_to_md(second, third);
             if let Some(dm) = dm {
                 return Some((i32::from(year), dm.0, dm.1));
@@ -802,7 +802,7 @@ fn map_ints_to_ymd(first: u16, second: u16, third: u16) -> Option<(i32, i8, i8)>
 /// Takes two ints and returns them in a (m, d) tuple
 fn map_ints_to_md(first: u16, second: u16) -> Option<(i8, i8)> {
     for &(d, m) in &[(first, second), (second, first)] {
-        if 1 <= d && d <= 31 && 1 <= m && m <= 12 {
+        if (1..=31).contains(&d) && (1..=12).contains(&m) {
             return Some((m as i8, d as i8));
         }
     }
