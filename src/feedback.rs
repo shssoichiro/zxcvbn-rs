@@ -7,7 +7,7 @@ use crate::matching::Match;
 use std::fmt;
 
 /// A warning explains what's wrong with the password.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 #[allow(missing_docs)]
 pub enum Warning {
@@ -66,7 +66,7 @@ impl fmt::Display for Warning {
 }
 
 /// A suggestion helps to choose a better password.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 #[allow(missing_docs)]
 pub enum Suggestion {
@@ -286,4 +286,31 @@ fn get_dictionary_match_feedback(
         warning,
         suggestions,
     }
+}
+
+#[cfg_attr(not(target_arch = "wasm32"), test)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+fn test_top_password_feedback() {
+    use crate::zxcvbn;
+
+    let password = "password";
+    let entropy = zxcvbn(password, &[]).unwrap();
+    assert_eq!(
+        entropy.feedback.unwrap().warning,
+        Some(Warning::ThisIsATop10Password)
+    );
+
+    let password = "test";
+    let entropy = zxcvbn(password, &[]).unwrap();
+    assert_eq!(
+        entropy.feedback.unwrap().warning,
+        Some(Warning::ThisIsATop100Password)
+    );
+
+    let password = "p4ssw0rd";
+    let entropy = zxcvbn(password, &[]).unwrap();
+    assert_eq!(
+        entropy.feedback.unwrap().warning,
+        Some(Warning::ThisIsSimilarToACommonlyUsedPassword)
+    );
 }
