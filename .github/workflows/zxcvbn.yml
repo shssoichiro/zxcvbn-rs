@@ -68,3 +68,32 @@ jobs:
 
     - name: Generate docs
       run: cargo doc --all-features --no-deps
+
+  build-wasm:
+    runs-on: ubuntu-latest
+
+    - uses: actions/checkout@v2
+
+    - name: Install stable
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+
+    - name: Install wasm-pack
+      uses: jetli/wasm-pack-action@v0.3.0
+      with:
+        version: 'latest'
+
+    - name: Build (wasm, default features)
+      run: cargo build --target wasm32-unknown-unknown --tests --benches
+
+    - name: Run tests (wasm, default features)
+      run: wasm-pack test --node
+
+    - name: Build (wasm, default features)
+      run: cargo build --target wasm32-unknown-unknown --tests --benches
+
+    - name: Run tests (wasm, all features)
+      run: wasm-pack test --node --all-features
