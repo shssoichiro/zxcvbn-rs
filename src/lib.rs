@@ -17,8 +17,7 @@ extern crate serde;
 #[cfg(feature = "ser")]
 #[macro_use]
 extern crate serde_derive;
-use std::{convert::TryFrom, time::Duration};
-use time::OffsetDateTime;
+use std::time::Duration;
 
 #[cfg(test)]
 #[macro_use]
@@ -108,6 +107,21 @@ quick_error! {
     }
 }
 
+#[cfg(target_arch = "wasm32")]
+fn duration_since_epoch() -> Result<Duration, ZxcvbnError> {
+    match js_sys::Date::new_0().get_time() as u64 {
+        u64::MIN | u64::MAX => Err(ZxcvbnError::DurationOutOfRange),
+        millis => Ok(Duration::from_millis(millis)),
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn duration_since_epoch() -> Result<Duration, ZxcvbnError> {
+    std::time::SystemTime::now()
+        .duration_since(std::time::SystemTime::UNIX_EPOCH)
+        .map_err(|_| ZxcvbnError::DurationOutOfRange)
+}
+
 /// Takes a password string and optionally a list of user-supplied inputs
 /// (e.g. username, email, first name) and calculates the strength of the password
 /// based on entropy, using a number of different factors.
@@ -116,7 +130,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         return Err(ZxcvbnError::BlankPassword);
     }
 
-    let start_time = OffsetDateTime::now_utc();
+    let start_time = duration_since_epoch()?;
 
     // Only evaluate the first 100 characters of the input.
     // This prevents potential DoS attacks from sending extremely long input strings.
@@ -130,8 +144,7 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
 
     let matches = matching::omnimatch(&password, &sanitized_inputs);
     let result = scoring::most_guessable_match_sequence(&password, &matches, false);
-    let calc_time = Duration::try_from(OffsetDateTime::now_utc() - start_time)
-        .map_err(|_| ZxcvbnError::DurationOutOfRange)?;
+    let calc_time = duration_since_epoch()? - start_time;
     let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &result.sequence);
 

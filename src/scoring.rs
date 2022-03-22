@@ -2,7 +2,6 @@ use crate::matching::patterns::*;
 use crate::matching::Match;
 use std::cmp;
 use std::collections::HashMap;
-use time::OffsetDateTime;
 
 #[derive(Debug, Clone)]
 pub struct GuessCalculation {
@@ -28,8 +27,19 @@ struct Optimal {
     g: Vec<HashMap<usize, u64>>,
 }
 
+#[cfg(target_arch = "wasm32")]
+fn current_year() -> i32 {
+    js_sys::Date::new_0().get_full_year().try_into().unwrap()
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn current_year() -> i32 {
+    use time::OffsetDateTime;
+    OffsetDateTime::now_utc().year()
+}
+
 lazy_static! {
-    pub(crate) static ref REFERENCE_YEAR: i32 = OffsetDateTime::now_utc().year();
+    pub(crate) static ref REFERENCE_YEAR: i32 = current_year();
 }
 const MIN_YEAR_SPACE: i32 = 20;
 const BRUTEFORCE_CARDINALITY: u64 = 10;
