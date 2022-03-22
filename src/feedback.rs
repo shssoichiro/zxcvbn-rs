@@ -288,29 +288,37 @@ fn get_dictionary_match_feedback(
     }
 }
 
-#[cfg_attr(not(target_arch = "wasm32"), test)]
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
-fn test_top_password_feedback() {
-    use crate::zxcvbn;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let password = "password";
-    let entropy = zxcvbn(password, &[]).unwrap();
-    assert_eq!(
-        entropy.feedback.unwrap().warning,
-        Some(Warning::ThisIsATop10Password)
-    );
+    #[cfg(target_arch = "wasm32")]
+    use wasm_bindgen_test::wasm_bindgen_test;
 
-    let password = "test";
-    let entropy = zxcvbn(password, &[]).unwrap();
-    assert_eq!(
-        entropy.feedback.unwrap().warning,
-        Some(Warning::ThisIsATop100Password)
-    );
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_top_password_feedback() {
+        use crate::zxcvbn;
 
-    let password = "p4ssw0rd";
-    let entropy = zxcvbn(password, &[]).unwrap();
-    assert_eq!(
-        entropy.feedback.unwrap().warning,
-        Some(Warning::ThisIsSimilarToACommonlyUsedPassword)
-    );
+        let password = "password";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(
+            entropy.feedback.unwrap().warning,
+            Some(Warning::ThisIsATop10Password)
+        );
+
+        let password = "test";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(
+            entropy.feedback.unwrap().warning,
+            Some(Warning::ThisIsATop100Password)
+        );
+
+        let password = "p4ssw0rd";
+        let entropy = zxcvbn(password, &[]).unwrap();
+        assert_eq!(
+            entropy.feedback.unwrap().warning,
+            Some(Warning::ThisIsSimilarToACommonlyUsedPassword)
+        );
+    }
 }
