@@ -57,8 +57,8 @@ jobs:
     - name: Build (default features)
       run: cargo build --tests --benches
 
-    - name: Run tests (all features)
-      run: cargo test --all-features
+    - name: Run tests (default features)
+      run: cargo test
 
     - name: Build (default features)
       run: cargo build --tests --benches
