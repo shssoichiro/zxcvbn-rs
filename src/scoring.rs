@@ -796,6 +796,17 @@ mod tests {
     }
 
     #[test]
+    fn test_regex_guesses_current_year() {
+        use time::OffsetDateTime;
+        let token = OffsetDateTime::now_utc().year().to_string();
+        let mut p = RegexPattern {
+            regex_name: "recent_year",
+            regex_match: vec![token.to_string()],
+        };
+        assert_eq!(p.estimate(&token), scoring::MIN_YEAR_SPACE as u64);
+    }
+
+    #[test]
     fn test_date_guesses() {
         let mut p = DatePattern {
             separator: "".to_string(),
