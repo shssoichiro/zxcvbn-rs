@@ -12,30 +12,28 @@ jobs:
   clippy-rustfmt:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
 
-    - uses: actions/checkout@v2
+      - name: Install stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: clippy, rustfmt
 
-    - name: Install stable
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        components: clippy, rustfmt
+      - name: Run rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check --verbose
 
-    - name: Run rustfmt
-      uses: actions-rs/cargo@v1
-      with:
-        command: fmt
-        args: -- --check --verbose
-
-    - name: Lint
-      uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        args: --all-features --tests --benches
-        name: lint
-
+      - name: Lint
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --all-features --tests --benches
+          name: lint
 
   build:
     strategy:
@@ -45,55 +43,56 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-    - uses: actions/checkout@v2
+      - uses: actions/checkout@v2
 
-    - name: Install stable
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
+      - name: Install stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
-    - name: Build (default features)
-      run: cargo build --tests --benches
+      - name: Build (default features)
+        run: cargo build --tests --benches
 
-    - name: Run tests (default features)
-      run: cargo test
+      - name: Run tests (default features)
+        run: cargo test
 
-    - name: Build (default features)
-      run: cargo build --tests --benches
+      - name: Build (default features)
+        run: cargo build --tests --benches
 
-    - name: Run tests (all features)
-      run: cargo test --all-features
+      - name: Run tests (all features)
+        run: cargo test --all-features
 
-    - name: Generate docs
-      run: cargo doc --all-features --no-deps
+      - name: Generate docs
+        run: cargo doc --all-features --no-deps
 
   build-wasm:
     runs-on: ubuntu-latest
 
-    - uses: actions/checkout@v2
+    steps:
+      - uses: actions/checkout@v2
 
-    - name: Install stable
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
+      - name: Install stable
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
 
-    - name: Install wasm-pack
-      uses: jetli/wasm-pack-action@v0.3.0
-      with:
-        version: 'latest'
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.3.0
+        with:
+          version: "latest"
 
-    - name: Build (wasm, default features)
-      run: cargo build --target wasm32-unknown-unknown --tests --benches
+      - name: Build (wasm, default features)
+        run: cargo build --target wasm32-unknown-unknown --tests --benches
 
-    - name: Run tests (wasm, default features)
-      run: wasm-pack test --node
+      - name: Run tests (wasm, default features)
+        run: wasm-pack test --node
 
-    - name: Build (wasm, default features)
-      run: cargo build --target wasm32-unknown-unknown --tests --benches
+      - name: Build (wasm, default features)
+        run: cargo build --target wasm32-unknown-unknown --tests --benches
 
-    - name: Run tests (wasm, all features)
-      run: wasm-pack test --node --all-features
+      - name: Run tests (wasm, all features)
+        run: wasm-pack test --node --all-features
