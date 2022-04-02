@@ -6,7 +6,7 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "2.2.0"
+version = "2.2.1"
 edition = "2021"
 
 [badges]

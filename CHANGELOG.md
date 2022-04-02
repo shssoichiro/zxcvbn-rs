@@ -1,3 +1,6 @@
+**Version 2.2.1**
+ - Fixes for building on WASM targets
+
 **Version 2.2.0**
  - Fix an issue where a less specific feedback would be given
    when a more specific feedback was available. (https://github.com/shssoichiro/zxcvbn-rs/issues/54)[#54]
