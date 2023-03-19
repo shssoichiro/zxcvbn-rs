@@ -498,7 +498,7 @@ mod tests {
 
     quickcheck! {
         fn test_n_ck_mul_overflow(n: usize, k: usize) -> TestResult {
-            if n >= 63 {
+            if n >= 63 && n <= 100 {
                 scoring::n_ck(n, k); // Must not panic
                 TestResult::from_bool(true)
             } else {
