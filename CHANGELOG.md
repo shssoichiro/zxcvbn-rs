@@ -1,3 +1,10 @@
+**Version 2.2.2**
+- Fix a possible panic in spatial pattern checker (https://github.com/shssoichiro/zxcvbn-rs/issues/70)[#70]
+- Update several dependencies
+- Fix several new clippy lints
+- Officially specify minimum Rust version requirement
+  - The version has not changed, but the requirement has now been added to Cargo.toml
+
 **Version 2.2.1**
  - Fixes for building on WASM targets
 

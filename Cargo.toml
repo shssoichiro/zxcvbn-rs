@@ -6,11 +6,11 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "2.2.1"
+version = "2.2.2"
 edition = "2021"
+rust-version = "1.63"
 
 [badges]
-travis-ci = { repository = "shssoichiro/zxcvbn-rs", branch = "master" }
 maintenance = { status = "passively-maintained" }
 
 [dependencies]

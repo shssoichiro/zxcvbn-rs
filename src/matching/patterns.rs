@@ -3,7 +3,7 @@ use crate::matching::Match;
 use std::collections::HashMap;
 
 /// Pattern type used to detect a match
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
 #[cfg_attr(feature = "ser", serde(tag = "pattern"))]
 #[cfg_attr(feature = "ser", serde(rename_all = "lowercase"))]
@@ -21,6 +21,7 @@ pub enum MatchPattern {
     /// A match based on date patterns
     Date(DatePattern),
     /// A match based on bruteforce attempting to guess a password
+    #[default]
     BruteForce,
 }
 
@@ -36,12 +37,6 @@ impl MatchPattern {
             MatchPattern::Date(_) => "date",
             MatchPattern::BruteForce => "bruteforce",
         }
-    }
-}
-
-impl Default for MatchPattern {
-    fn default() -> Self {
-        MatchPattern::BruteForce
     }
 }
 

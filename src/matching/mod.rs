@@ -509,7 +509,7 @@ impl Matcher for SequenceMatch {
                     ("lower", 26)
                 } else if first_chr.is_uppercase() {
                     ("upper", 26)
-                } else if first_chr.is_digit(10) {
+                } else if first_chr.is_ascii_digit() {
                     ("digits", 10)
                 } else {
                     // conservatively stick with roman alphabet size.

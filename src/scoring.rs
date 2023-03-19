@@ -106,7 +106,7 @@ pub fn most_guessable_match_sequence(
             if competing_l > len {
                 continue;
             }
-            if competing_guesses <= guesses as u64 {
+            if competing_guesses <= guesses {
                 return;
             }
         }
@@ -202,7 +202,7 @@ pub fn most_guessable_match_sequence(
     };
 
     GuessCalculation {
-        guesses: guesses as u64,
+        guesses,
         guesses_log10: (guesses as f64).log10(),
         sequence: optimal_match_sequence,
     }
@@ -326,7 +326,7 @@ fn l33t_variations(pattern: &DictionaryPattern, token: &str) -> u64 {
             variations *= possibilities;
         }
     }
-    variations as u64
+    variations
 }
 
 fn n_ck(n: usize, k: usize) -> u64 {
@@ -362,7 +362,7 @@ impl Estimator for SpatialPattern {
             for j in 1..=possible_turns {
                 guesses = guesses.saturating_add(
                     n_ck(i - 1, j - 1)
-                        .saturating_mul(starts as u64)
+                        .saturating_mul(starts)
                         .saturating_mul(degree.pow(j as u32)),
                 );
             }
@@ -413,7 +413,7 @@ impl Estimator for SequencePattern {
         // lower guesses for obvious starting points
         let mut base_guesses = if ['a', 'A', 'z', 'Z', '0', '1', '9'].contains(&first_chr) {
             4
-        } else if first_chr.is_digit(10) {
+        } else if first_chr.is_ascii_digit() {
             10
         } else {
             // could give a higher base for uppercase,
@@ -468,7 +468,7 @@ impl Estimator for DatePattern {
         if !self.separator.is_empty() {
             guesses *= 4;
         }
-        guesses as u64
+        guesses
     }
 }
 
