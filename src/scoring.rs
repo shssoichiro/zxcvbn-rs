@@ -361,7 +361,9 @@ impl Estimator for SpatialPattern {
             let possible_turns = cmp::min(self.turns, i - 1);
             for j in 1..=possible_turns {
                 guesses = guesses.saturating_add(
-                    n_ck(i - 1, j - 1) * starts as u64 * degree.pow(j as u32) as u64,
+                    n_ck(i - 1, j - 1)
+                        .saturating_mul(starts as u64)
+                        .saturating_mul(degree.pow(j as u32)),
                 );
             }
         }
