@@ -848,7 +848,7 @@ lazy_static! {
         table
     };
     static ref MAYBE_DATE_NO_SEPARATOR_REGEX: Regex = Regex::new(r"^[0-9]{4,8}$").unwrap();
-    static ref MAYBE_DATE_WITH_SEPARATOR_REGEX: Regex = Regex::new(r"^([0-9]{1,4})([\s/\\_.-])([0-9]{1,2})([\s/\\_.-])([0-9]{1,4})$").unwrap();
+    static ref MAYBE_DATE_WITH_SEPARATOR_REGEX: Regex = Regex::new(r"^([0-9]{1,4})([ \t\r\n/\\_.-])([0-9]{1,2})([[ \t\r\n/\\_.-]/\\_.-])([0-9]{1,4})$").unwrap();
 }
 
 #[cfg(test)]
