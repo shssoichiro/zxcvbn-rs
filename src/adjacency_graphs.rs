@@ -642,6 +642,89 @@ lazy_static! {
         );
         table.insert('#', vec![Some("+*~"), None, Some("äÄ"), None, None, None]);
         table.insert('\'', vec![Some("+*~"), None, Some("äÄ"), None, None, None]);
+        table.insert('<', vec![None, Some("aA"), None, Some("yY"), None, None]);
+        table.insert('>', vec![None, Some("aA"), None, Some("yY"), None, None]);
+        table.insert('|', vec![None, Some("aA"), None, Some("yY"), None, None]);
+        table.insert(
+            'y',
+            vec![Some("aA"), Some("sS"), Some("<>|"), Some("xX"), None, None],
+        );
+        table.insert(
+            'Y',
+            vec![Some("aA"), Some("sS"), Some("<>|"), Some("xX"), None, None],
+        );
+        table.insert(
+            'x',
+            vec![Some("sS"), Some("dD"), Some("yY"), Some("cC"), None, None],
+        );
+        table.insert(
+            'X',
+            vec![Some("sS"), Some("dD"), Some("yY"), Some("cC"), None, None],
+        );
+        table.insert(
+            'c',
+            vec![Some("dD"), Some("fF"), Some("xX"), Some("vV"), None, None],
+        );
+        table.insert(
+            'C',
+            vec![Some("dD"), Some("fF"), Some("xX"), Some("vV"), None, None],
+        );
+        table.insert(
+            'v',
+            vec![Some("fF"), Some("gG"), Some("cC"), Some("bB"), None, None],
+        );
+        table.insert(
+            'V',
+            vec![Some("fF"), Some("gG"), Some("cC"), Some("bB"), None, None],
+        );
+        table.insert(
+            'b',
+            vec![Some("gG"), Some("hH"), Some("vV"), Some("nN"), None, None],
+        );
+        table.insert(
+            'B',
+            vec![Some("gG"), Some("hH"), Some("vV"), Some("nN"), None, None],
+        );
+        table.insert(
+            'n',
+            vec![Some("hH"), Some("jJ"), Some("bB"), Some("mM"), None, None],
+        );
+        table.insert(
+            'N',
+            vec![Some("hH"), Some("jJ"), Some("bB"), Some("mM"), None, None],
+        );
+        table.insert(
+            'm',
+            vec![Some("jJ"), Some("kK"), Some("nN"), Some(",;"), None, None],
+        );
+        table.insert(
+            'M',
+            vec![Some("jJ"), Some("kK"), Some("nN"), Some(",;"), None, None],
+        );
+        table.insert(
+            ',',
+            vec![Some("kK"), Some("lL"), Some("mM"), Some(".:"), None, None],
+        );
+        table.insert(
+            ';',
+            vec![Some("kK"), Some("lL"), Some("mM"), Some(".:"), None, None],
+        );
+        table.insert(
+            '.',
+            vec![Some("lL"), Some("öÖ"), Some(",;"), Some("-_"), None, None],
+        );
+        table.insert(
+            ':',
+            vec![Some("lL"), Some("öÖ"), Some(",;"), Some("-_"), None, None],
+        );
+        table.insert(
+            '-',
+            vec![Some("öÖ"), Some("äÄ"), Some(".:"), None, None, None],
+        );
+        table.insert(
+            '_',
+            vec![Some("öÖ"), Some("äÄ"), Some(".:"), None, None, None],
+        );
 
         table
     };
