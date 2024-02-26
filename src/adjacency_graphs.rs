@@ -1,6 +1,150 @@
 use std::collections::HashMap;
 
 lazy_static! {
+    pub static ref QWERTZ: HashMap<char, Vec<Option<&'static str>>> = {
+        let mut table = HashMap::with_capacity(94);
+        table.insert('^', vec![None, None, None, Some("1!"), None, None]);
+        table.insert('°', vec![None, None, None, Some("1!"), None, None]);
+        table.insert(
+            '1',
+            vec![None, None, Some("^°"), Some("2\""), None, Some("qQ@")],
+        );
+        table.insert(
+            '!',
+            vec![None, None, Some("^°"), Some("2\""), None, Some("qQ@")],
+        );
+        table.insert(
+            '2',
+            vec![None, None, Some("1!"), Some("3§"), Some("qQ@"), Some("wW")],
+        );
+        table.insert(
+            '"',
+            vec![None, None, Some("1!"), Some("3§"), Some("qQ@"), Some("wW")],
+        );
+        table.insert(
+            '3',
+            vec![None, None, Some("2\""), Some("4$"), Some("wW"), Some("eE€")],
+        );
+        table.insert(
+            '§',
+            vec![None, None, Some("2\""), Some("4$"), Some("wW"), Some("eE€")],
+        );
+        table.insert(
+            '4',
+            vec![None, None, Some("3§"), Some("5%"), Some("eE€"), Some("rR")],
+        );
+        table.insert(
+            '$',
+            vec![None, None, Some("3§"), Some("5%"), Some("eE€"), Some("rR")],
+        );
+        table.insert(
+            '5',
+            vec![None, None, Some("4$"), Some("6&"), Some("rR"), Some("tT")],
+        );
+        table.insert(
+            '%',
+            vec![None, None, Some("4$"), Some("6&"), Some("rR"), Some("tT")],
+        );
+        table.insert(
+            '6',
+            vec![None, None, Some("5%"), Some("7/{"), Some("tT"), Some("zZ")],
+        );
+        table.insert(
+            '&',
+            vec![None, None, Some("5%"), Some("7/{"), Some("tT"), Some("zZ")],
+        );
+        table.insert(
+            '7',
+            vec![None, None, Some("6&"), Some("8(["), Some("zZ"), Some("uU")],
+        );
+        table.insert(
+            '/',
+            vec![None, None, Some("6&"), Some("8(["), Some("zZ"), Some("uU")],
+        );
+        table.insert(
+            '{',
+            vec![None, None, Some("6&"), Some("8(["), Some("zZ"), Some("uU")],
+        );
+        table.insert(
+            '8',
+            vec![None, None, Some("7/{"), Some("9)]"), Some("uU"), Some("iI")],
+        );
+        table.insert(
+            '(',
+            vec![None, None, Some("7/{"), Some("9)]"), Some("uU"), Some("iI")],
+        );
+        table.insert(
+            '[',
+            vec![None, None, Some("7/{"), Some("9)]"), Some("uU"), Some("iI")],
+        );
+        table.insert(
+            '9',
+            vec![None, None, Some("8(["), Some("0=}"), Some("iI"), Some("oO")],
+        );
+        table.insert(
+            ')',
+            vec![None, None, Some("8(["), Some("0=}"), Some("iI"), Some("oO")],
+        );
+        table.insert(
+            ']',
+            vec![None, None, Some("8(["), Some("0=}"), Some("iI"), Some("oO")],
+        );
+        table.insert(
+            '0',
+            vec![
+                None,
+                None,
+                Some("9)]"),
+                Some("ß?\\"),
+                Some("oO"),
+                Some("pP"),
+            ],
+        );
+        table.insert(
+            '=',
+            vec![
+                None,
+                None,
+                Some("9)]"),
+                Some("ß?\\"),
+                Some("oO"),
+                Some("pP"),
+            ],
+        );
+        table.insert(
+            '}',
+            vec![
+                None,
+                None,
+                Some("9)]"),
+                Some("ß?\\"),
+                Some("oO"),
+                Some("pP"),
+            ],
+        );
+        table.insert(
+            'ß',
+            vec![None, None, Some("0=}"), Some("´`"), Some("pP"), Some("üÜ")],
+        );
+        table.insert(
+            '?',
+            vec![None, None, Some("0=}"), Some("´`"), Some("pP"), Some("üÜ")],
+        );
+        table.insert(
+            '\\',
+            vec![None, None, Some("0=}"), Some("´`"), Some("pP"), Some("üÜ")],
+        );
+        table.insert(
+            '`',
+            vec![None, None, Some("ß?\\"), None, Some("üÜ"), Some("+*~")],
+        );
+        table.insert(
+            '´',
+            vec![None, None, Some("ß?\\"), None, Some("üÜ"), Some("+*~")],
+        );
+
+        table
+    };
     pub static ref QWERTY: HashMap<char, Vec<Option<&'static str>>> = {
         let mut table = HashMap::with_capacity(94);
         table.insert(
