@@ -33,6 +33,21 @@ pub mod matching;
 mod scoring;
 pub mod time_estimates;
 
+/// score type: Variants are self explanatory
+#[derive(PartialEq, Debug, Clone, Copy)]
+pub enum Score {
+    /// SuperWeak: too lazy! 🙄
+    SuperWeak,
+    /// VeryWeak: a useless password ❌
+    VeryWeak,
+    /// Weak: easily crackable 👎
+    Weak,
+    /// Medium: need a bit more effort 😩
+    Medium,
+    /// Perfect: just enough, for now :)💪
+    Perfect,
+}
+
 /// Contains the results of an entropy calculation
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "ser", derive(Serialize))]
@@ -45,7 +60,7 @@ pub struct Entropy {
     crack_times: time_estimates::CrackTimes,
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
-    score: u8,
+    score: Score,
     /// Verbal feedback to help choose better passwords. Set when `score` <= 2.
     feedback: Option<feedback::Feedback>,
     /// The list of patterns the guess calculation was based on
@@ -72,7 +87,7 @@ impl Entropy {
 
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
-    pub fn score(&self) -> u8 {
+    pub fn score(&self) -> Score {
         self.score
     }
 
@@ -188,7 +203,7 @@ mod tests {
         let password = "r0sebudmaelstrom11/20/91aaaa";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses_log10 as u16, 14);
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Perfect);
         assert!(!entropy.sequence.is_empty());
         assert!(entropy.feedback.is_none());
         assert!(entropy.calc_time.as_nanos() > 0);
@@ -199,7 +214,7 @@ mod tests {
     fn test_zxcvbn_unicode() {
         let password = "𐰊𐰂𐰄𐰀𐰁";
         let entropy = zxcvbn(password, &[]).unwrap();
-        assert_eq!(entropy.score, 1);
+        assert_eq!(entropy.score, Score::VeryWeak);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -207,7 +222,7 @@ mod tests {
     fn test_zxcvbn_unicode_2() {
         let password = "r0sebudmaelstrom丂/20/91aaaa";
         let entropy = zxcvbn(password, &[]).unwrap();
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Perfect);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -215,7 +230,7 @@ mod tests {
     fn test_issue_13() {
         let password = "Imaginative-Say-Shoulder-Dish-0";
         let entropy = zxcvbn(password, &[]).unwrap();
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Perfect);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -225,7 +240,7 @@ mod tests {
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 372_010_000);
         assert!((entropy.guesses_log10 - 8.57055461430783).abs() < f64::EPSILON);
-        assert_eq!(entropy.score, 3);
+        assert_eq!(entropy.score, Score::Medium);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -235,7 +250,7 @@ mod tests {
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 1_010_000);
         assert!((entropy.guesses_log10 - 6.004321373782642).abs() < f64::EPSILON);
-        assert_eq!(entropy.score, 2);
+        assert_eq!(entropy.score, Score::Weak);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -244,7 +259,7 @@ mod tests {
         let password = "!QASW@#EDFR$%TGHY^&UJKI*(OL";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, u64::max_value());
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Perfect);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -253,6 +268,6 @@ mod tests {
         let password = "08märz2010";
         let entropy = zxcvbn(password, &[]).unwrap();
         assert_eq!(entropy.guesses, 100010000);
-        assert_eq!(entropy.score, 3);
+        assert_eq!(entropy.score, Score::Medium);
     }
 }

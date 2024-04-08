@@ -4,6 +4,7 @@
 use crate::frequency_lists::DictionaryType;
 use crate::matching::patterns::*;
 use crate::matching::Match;
+use crate::Score;
 use std::fmt;
 
 /// A warning explains what's wrong with the password.
@@ -153,7 +154,7 @@ impl Feedback {
     }
 }
 
-pub(crate) fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
+pub(crate) fn get_feedback(score: Score, sequence: &[Match]) -> Option<Feedback> {
     if sequence.is_empty() {
         // default feedback
         return Some(Feedback {
@@ -164,7 +165,7 @@ pub(crate) fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
             ],
         });
     }
-    if score >= 3 {
+    if score == Score::Medium || score == Score::Perfect {
         return None;
     }
 

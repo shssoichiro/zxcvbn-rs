@@ -20,6 +20,7 @@
 //! # }
 //! ```
 
+use crate::Score;
 use std::fmt;
 
 /// Back-of-the-envelope crack time estimations, in seconds, based on a few scenarios.
@@ -129,21 +130,21 @@ impl From<CrackTimeSeconds> for std::time::Duration {
     }
 }
 
-pub(crate) fn estimate_attack_times(guesses: u64) -> (CrackTimes, u8) {
+pub(crate) fn estimate_attack_times(guesses: u64) -> (CrackTimes, Score) {
     (CrackTimes::new(guesses), calculate_score(guesses))
 }
 
-fn calculate_score(guesses: u64) -> u8 {
+fn calculate_score(guesses: u64) -> Score {
     const DELTA: u64 = 5;
     if guesses < 1_000 + DELTA {
-        0
+        Score::SuperWeak // previously, 0
     } else if guesses < 1_000_000 + DELTA {
-        1
+        Score::VeryWeak // peviously, 1
     } else if guesses < 100_000_000 + DELTA {
-        2
+        Score::Weak // previously, 2
     } else if guesses < 10_000_000_000 + DELTA {
-        3
+        Score::Medium // previously, 3
     } else {
-        4
+        Score::Perfect // previously, 4
     }
 }
