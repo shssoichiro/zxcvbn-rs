@@ -27,20 +27,19 @@ struct Optimal {
     g: Vec<HashMap<usize, u64>>,
 }
 
-#[cfg(target_arch = "wasm32")]
-fn current_year() -> i32 {
-    js_sys::Date::new_0().get_full_year().try_into().unwrap()
-}
-
 #[cfg(not(target_arch = "wasm32"))]
-fn current_year() -> i32 {
-    use time::OffsetDateTime;
-    OffsetDateTime::now_utc().year()
+lazy_static! {
+    pub(crate) static ref REFERENCE_YEAR: i32 = time::OffsetDateTime::now_utc().year();
 }
 
+#[cfg(target_arch = "wasm32")]
 lazy_static! {
-    pub(crate) static ref REFERENCE_YEAR: i32 = current_year();
+    pub(crate) static ref REFERENCE_YEAR: i32 = web_sys::js_sys::Date::new_0()
+        .get_full_year()
+        .try_into()
+        .unwrap();
 }
+
 const MIN_YEAR_SPACE: i32 = 20;
 const BRUTEFORCE_CARDINALITY: u64 = 10;
 const MIN_GUESSES_BEFORE_GROWING_SEQUENCE: u64 = 10_000;
@@ -809,8 +808,7 @@ mod tests {
 
     #[test]
     fn test_regex_guesses_current_year() {
-        use time::OffsetDateTime;
-        let token = OffsetDateTime::now_utc().year().to_string();
+        let token = time::OffsetDateTime::now_utc().year().to_string();
         let mut p = RegexPattern {
             regex_name: "recent_year",
             regex_match: vec![token.to_string()],
