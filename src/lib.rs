@@ -21,6 +21,7 @@ use std::time::Duration;
 #[macro_use]
 extern crate quickcheck;
 
+use scoring::Score;
 use time_estimates::CrackTimes;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;
@@ -77,7 +78,7 @@ pub struct Entropy {
     crack_times: time_estimates::CrackTimes,
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
-    score: u8,
+    score: Score,
     /// Verbal feedback to help choose better passwords. Set when `score` <= 2.
     feedback: Option<feedback::Feedback>,
     /// The list of patterns the guess calculation was based on
@@ -104,7 +105,7 @@ impl Entropy {
 
     /// Overall strength score from 0-4.
     /// Any score less than 3 should be considered too weak.
-    pub fn score(&self) -> u8 {
+    pub fn score(&self) -> Score {
         self.score
     }
 
@@ -133,8 +134,8 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Entropy {
             guesses: 0,
             guesses_log10: f64::NEG_INFINITY,
             crack_times: CrackTimes::new(0),
-            score: 0,
-            feedback: feedback::get_feedback(0, &[]),
+            score: Score::Zero,
+            feedback: feedback::get_feedback(Score::Zero, &[]),
             sequence: Vec::default(),
             calc_time: Duration::from_secs(0),
         };
@@ -198,7 +199,7 @@ mod tests {
         let password = "r0sebudmaelstrom11/20/91aaaa";
         let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses_log10 as u16, 14);
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Four);
         assert!(!entropy.sequence.is_empty());
         assert!(entropy.feedback.is_none());
         assert!(entropy.calc_time.as_nanos() > 0);
@@ -209,7 +210,7 @@ mod tests {
     fn test_zxcvbn_empty() {
         let password = "";
         let entropy = zxcvbn(password, &[]);
-        assert_eq!(entropy.score, 0);
+        assert_eq!(entropy.score, Score::Zero);
         assert_eq!(entropy.guesses, 0);
         assert_eq!(entropy.guesses_log10, f64::NEG_INFINITY);
         assert_eq!(entropy.crack_times, CrackTimes::new(0));
@@ -221,7 +222,7 @@ mod tests {
     fn test_zxcvbn_unicode() {
         let password = "𐰊𐰂𐰄𐰀𐰁";
         let entropy = zxcvbn(password, &[]);
-        assert_eq!(entropy.score, 1);
+        assert_eq!(entropy.score, Score::One);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -229,7 +230,7 @@ mod tests {
     fn test_zxcvbn_unicode_2() {
         let password = "r0sebudmaelstrom丂/20/91aaaa";
         let entropy = zxcvbn(password, &[]);
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Four);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -237,7 +238,7 @@ mod tests {
     fn test_issue_13() {
         let password = "Imaginative-Say-Shoulder-Dish-0";
         let entropy = zxcvbn(password, &[]);
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Four);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -247,7 +248,7 @@ mod tests {
         let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, 372_010_000);
         assert!((entropy.guesses_log10 - 8.57055461430783).abs() < f64::EPSILON);
-        assert_eq!(entropy.score, 3);
+        assert_eq!(entropy.score, Score::Three);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -257,7 +258,7 @@ mod tests {
         let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, 1_010_000);
         assert!((entropy.guesses_log10 - 6.004321373782642).abs() < f64::EPSILON);
-        assert_eq!(entropy.score, 2);
+        assert_eq!(entropy.score, Score::Two);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -266,7 +267,7 @@ mod tests {
         let password = "!QASW@#EDFR$%TGHY^&UJKI*(OL";
         let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, u64::max_value());
-        assert_eq!(entropy.score, 4);
+        assert_eq!(entropy.score, Score::Four);
     }
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
@@ -275,6 +276,6 @@ mod tests {
         let password = "08märz2010";
         let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, 100010000);
-        assert_eq!(entropy.score, 3);
+        assert_eq!(entropy.score, Score::Three);
     }
 }
