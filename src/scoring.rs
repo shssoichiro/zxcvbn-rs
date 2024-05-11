@@ -1,7 +1,41 @@
 use crate::matching::patterns::*;
 use crate::matching::Match;
-use std::cmp;
 use std::collections::HashMap;
+use std::{cmp, fmt::Display};
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum Score {
+    /// Can be cracked with 10^3 guesses or less.
+    Zero = 0,
+    /// Can be cracked with 10^6 guesses or less.
+    One,
+    /// Can be cracked with 10^8 guesses or less.
+    Two,
+    /// Can be cracked with 10^10 guesses or less.
+    Three,
+    /// Requires more than 10^10 guesses to crack.
+    Four,
+}
+
+impl From<Score> for i8 {
+    fn from(score: Score) -> i8 {
+        score as i8
+    }
+}
+
+impl Display for Score {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", i8::from(*self))
+    }
+}
+
+#[cfg(feature = "ser")]
+impl serde::Serialize for Score {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        i8::from(*self).serialize(serializer)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct GuessCalculation {

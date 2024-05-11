@@ -1,9 +1,9 @@
 //! Contains structs and methods related to generating feedback strings
 //! for providing help for the user to generate stronger passwords.
 
-use crate::frequency_lists::DictionaryType;
 use crate::matching::patterns::*;
 use crate::matching::Match;
+use crate::{frequency_lists::DictionaryType, scoring::Score};
 use std::fmt;
 
 /// A warning explains what's wrong with the password.
@@ -153,7 +153,7 @@ impl Feedback {
     }
 }
 
-pub(crate) fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
+pub(crate) fn get_feedback(score: Score, sequence: &[Match]) -> Option<Feedback> {
     if sequence.is_empty() {
         // default feedback
         return Some(Feedback {
@@ -164,7 +164,7 @@ pub(crate) fn get_feedback(score: u8, sequence: &[Match]) -> Option<Feedback> {
             ],
         });
     }
-    if score >= 3 {
+    if score >= Score::Three {
         return None;
     }
 
