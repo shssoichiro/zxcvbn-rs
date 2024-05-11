@@ -302,21 +302,21 @@ mod tests {
         use crate::zxcvbn;
 
         let password = "password";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(
             entropy.feedback.unwrap().warning,
             Some(Warning::ThisIsATop10Password)
         );
 
         let password = "test";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(
             entropy.feedback.unwrap().warning,
             Some(Warning::ThisIsATop100Password)
         );
 
         let password = "p4ssw0rd";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(
             entropy.feedback.unwrap().warning,
             Some(Warning::ThisIsSimilarToACommonlyUsedPassword)

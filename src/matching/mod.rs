@@ -1442,9 +1442,7 @@ mod tests {
 
     #[test]
     fn test_date_matches_year_closest_to_reference_year() {
-        use time::OffsetDateTime;
-
-        let now = OffsetDateTime::now_utc();
+        let now = time::OffsetDateTime::now_utc();
         let password = format!("1115{}", now.year() % 100);
         let matches = (matching::DateMatch {}).get_matches(&password, &HashMap::new());
         let m = matches.iter().find(|m| m.token == password).unwrap();

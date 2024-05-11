@@ -9,8 +9,6 @@ extern crate derive_builder;
 
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate quick_error;
 
 #[cfg(feature = "ser")]
 extern crate serde;
@@ -22,6 +20,10 @@ use std::time::Duration;
 #[cfg(test)]
 #[macro_use]
 extern crate quickcheck;
+
+use time_estimates::CrackTimes;
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::wasm_bindgen;
 
 pub use crate::matching::Match;
 
@@ -46,6 +48,36 @@ pub enum Score {
     Medium,
     /// Perfect: just enough, for now :)💪
     Perfect,
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn time_scoped<F, R>(f: F) -> (R, Duration)
+where
+    F: FnOnce() -> R,
+{
+    let start_time = std::time::Instant::now();
+    let result = f();
+    let calc_time = std::time::Instant::now().duration_since(start_time);
+    (result, calc_time)
+}
+
+#[cfg(target_arch = "wasm32")]
+#[allow(non_upper_case_globals)]
+fn time_scoped<F, R>(f: F) -> (R, Duration)
+where
+    F: FnOnce() -> R,
+{
+    #[wasm_bindgen]
+    extern "C" {
+        #[no_mangle]
+        #[used]
+        static performance: web_sys::Performance;
+    }
+
+    let start_time = performance.now();
+    let result = f();
+    let calc_time = std::time::Duration::from_secs_f64((performance.now() - start_time) / 1000.0);
+    (result, calc_time)
 }
 
 /// Contains the results of an entropy calculation
@@ -107,63 +139,40 @@ impl Entropy {
     }
 }
 
-quick_error! {
-    #[derive(Debug, Clone, Copy)]
-    /// Potential errors that may be returned from `zxcvbn`
-    pub enum ZxcvbnError {
-        /// Indicates that a blank password was passed in to `zxcvbn`
-        BlankPassword {
-            display("Zxcvbn cannot evaluate a blank password")
-        }
-        /// Indicates an error converting Duration to/from the standard library implementation
-        DurationOutOfRange {
-            display("Zxcvbn calculation time created a duration out of range")
-        }
-    }
-}
-
-#[cfg(target_arch = "wasm32")]
-fn duration_since_epoch() -> Result<Duration, ZxcvbnError> {
-    match js_sys::Date::new_0().get_time() as u64 {
-        u64::MIN | u64::MAX => Err(ZxcvbnError::DurationOutOfRange),
-        millis => Ok(Duration::from_millis(millis)),
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn duration_since_epoch() -> Result<Duration, ZxcvbnError> {
-    std::time::SystemTime::now()
-        .duration_since(std::time::SystemTime::UNIX_EPOCH)
-        .map_err(|_| ZxcvbnError::DurationOutOfRange)
-}
-
 /// Takes a password string and optionally a list of user-supplied inputs
 /// (e.g. username, email, first name) and calculates the strength of the password
 /// based on entropy, using a number of different factors.
-pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnError> {
+pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Entropy {
     if password.is_empty() {
-        return Err(ZxcvbnError::BlankPassword);
+        return Entropy {
+            guesses: 0,
+            guesses_log10: f64::NEG_INFINITY,
+            crack_times: CrackTimes::new(0),
+            score: 0,
+            feedback: feedback::get_feedback(0, &[]),
+            sequence: Vec::default(),
+            calc_time: Duration::from_secs(0),
+        };
     }
 
-    let start_time = duration_since_epoch()?;
+    let (result, calc_time) = time_scoped(|| {
+        // Only evaluate the first 100 characters of the input.
+        // This prevents potential DoS attacks from sending extremely long input strings.
+        let password = password.chars().take(100).collect::<String>();
 
-    // Only evaluate the first 100 characters of the input.
-    // This prevents potential DoS attacks from sending extremely long input strings.
-    let password = password.chars().take(100).collect::<String>();
+        let sanitized_inputs = user_inputs
+            .iter()
+            .enumerate()
+            .map(|(i, x)| (x.to_lowercase(), i + 1))
+            .collect();
 
-    let sanitized_inputs = user_inputs
-        .iter()
-        .enumerate()
-        .map(|(i, x)| (x.to_lowercase(), i + 1))
-        .collect();
-
-    let matches = matching::omnimatch(&password, &sanitized_inputs);
-    let result = scoring::most_guessable_match_sequence(&password, &matches, false);
-    let calc_time = duration_since_epoch()? - start_time;
+        let matches = matching::omnimatch(&password, &sanitized_inputs);
+        scoring::most_guessable_match_sequence(&password, &matches, false)
+    });
     let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
     let feedback = feedback::get_feedback(score, &result.sequence);
 
-    Ok(Entropy {
+    Entropy {
         guesses: result.guesses,
         guesses_log10: result.guesses_log10,
         crack_times,
@@ -171,12 +180,13 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Result<Entropy, ZxcvbnErr
         feedback,
         sequence: result.sequence,
         calc_time,
-    })
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use quickcheck::TestResult;
 
     #[cfg(target_arch = "wasm32")]
@@ -185,14 +195,14 @@ mod tests {
     quickcheck! {
         fn test_zxcvbn_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
             let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
-            zxcvbn(&password, &inputs).ok();
+            zxcvbn(&password, &inputs);
             TestResult::from_bool(true)
         }
 
         #[cfg(feature = "ser")]
         fn test_zxcvbn_serialisation_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
             let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
-            serde_json::to_string(&zxcvbn(&password, &inputs).ok()).ok();
+            serde_json::to_string(&zxcvbn(&password, &inputs)).ok();
             TestResult::from_bool(true)
         }
     }
@@ -201,7 +211,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_zxcvbn() {
         let password = "r0sebudmaelstrom11/20/91aaaa";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses_log10 as u16, 14);
         assert_eq!(entropy.score, Score::Perfect);
         assert!(!entropy.sequence.is_empty());
@@ -211,9 +221,21 @@ mod tests {
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
+    fn test_zxcvbn_empty() {
+        let password = "";
+        let entropy = zxcvbn(password, &[]);
+        assert_eq!(entropy.score, 0);
+        assert_eq!(entropy.guesses, 0);
+        assert_eq!(entropy.guesses_log10, f64::NEG_INFINITY);
+        assert_eq!(entropy.crack_times, CrackTimes::new(0));
+        assert_eq!(entropy.sequence, Vec::default());
+    }
+
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_zxcvbn_unicode() {
         let password = "𐰊𐰂𐰄𐰀𐰁";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.score, Score::VeryWeak);
     }
 
@@ -221,7 +243,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_zxcvbn_unicode_2() {
         let password = "r0sebudmaelstrom丂/20/91aaaa";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.score, Score::Perfect);
     }
 
@@ -229,7 +251,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_issue_13() {
         let password = "Imaginative-Say-Shoulder-Dish-0";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.score, Score::Perfect);
     }
 
@@ -237,7 +259,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_issue_15_example_1() {
         let password = "TestMeNow!";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, 372_010_000);
         assert!((entropy.guesses_log10 - 8.57055461430783).abs() < f64::EPSILON);
         assert_eq!(entropy.score, Score::Medium);
@@ -247,7 +269,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_issue_15_example_2() {
         let password = "hey<123";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, 1_010_000);
         assert!((entropy.guesses_log10 - 6.004321373782642).abs() < f64::EPSILON);
         assert_eq!(entropy.score, Score::Weak);
@@ -257,7 +279,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_overflow_safety() {
         let password = "!QASW@#EDFR$%TGHY^&UJKI*(OL";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, u64::max_value());
         assert_eq!(entropy.score, Score::Perfect);
     }
@@ -266,7 +288,7 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test)]
     fn test_unicode_mb() {
         let password = "08märz2010";
-        let entropy = zxcvbn(password, &[]).unwrap();
+        let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, 100010000);
         assert_eq!(entropy.score, Score::Medium);
     }
