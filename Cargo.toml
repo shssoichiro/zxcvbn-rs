@@ -6,7 +6,7 @@ homepage = "https://github.com/shssoichiro/zxcvbn-rs"
 license = "MIT"
 name = "zxcvbn"
 repository = "https://github.com/shssoichiro/zxcvbn-rs"
-version = "2.2.2"
+version = "3.0.0"
 edition = "2021"
 rust-version = "1.63"
 
@@ -16,7 +16,7 @@ maintenance = { status = "passively-maintained" }
 [dependencies]
 derive_builder = { version = "0.20", optional = true }
 fancy-regex = "0.13"
-itertools = "0.12"
+itertools = "0.13"
 lazy_static = "1.3"
 regex = "1"
 time = { version = "0.3" }
