@@ -110,8 +110,8 @@ impl Entropy {
     }
 
     /// Feedback to help choose better passwords. Set when `score` <= 2.
-    pub fn feedback(&self) -> &Option<feedback::Feedback> {
-        &self.feedback
+    pub fn feedback(&self) -> Option<&feedback::Feedback> {
+        self.feedback.as_ref()
     }
 
     /// The list of patterns the guess calculation was based on
