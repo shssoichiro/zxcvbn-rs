@@ -6,6 +6,7 @@ use std::{cmp, fmt::Display};
 /// Score of a password check.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
+#[cfg_attr(feature = "ser", derive(serde::Serialize, serde::Deserialize))]
 pub enum Score {
     /// Can be cracked with 10^3 guesses or less.
     Zero = 0,
@@ -28,13 +29,6 @@ impl From<Score> for i8 {
 impl Display for Score {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", i8::from(*self))
-    }
-}
-
-#[cfg(feature = "ser")]
-impl serde::Serialize for Score {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        i8::from(*self).serialize(serializer)
     }
 }
 

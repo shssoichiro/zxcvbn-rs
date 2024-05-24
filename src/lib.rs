@@ -10,11 +10,6 @@ extern crate derive_builder;
 #[macro_use]
 extern crate lazy_static;
 
-#[cfg(feature = "ser")]
-extern crate serde;
-#[cfg(feature = "ser")]
-#[macro_use]
-extern crate serde_derive;
 use std::time::Duration;
 
 #[cfg(test)]
@@ -68,7 +63,7 @@ where
 
 /// Contains the results of an entropy calculation
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct Entropy {
     /// Estimated guesses needed to crack the password
     guesses: u64,

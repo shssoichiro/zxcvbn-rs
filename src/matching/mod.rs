@@ -14,7 +14,7 @@ use std::collections::HashMap;
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct Match {
     /// Beginning of the match.
     pub i: usize,

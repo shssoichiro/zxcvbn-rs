@@ -29,10 +29,7 @@ web-sys = { version = "0.3", features = ["Performance"] }
 [dependencies.serde]
 optional = true
 version = "1"
-
-[dependencies.serde_derive]
-optional = true
-version = "1"
+features = ["derive"]
 
 [dev-dependencies]
 quickcheck = "1.0.0"
@@ -47,7 +44,7 @@ wasm-bindgen-test = "0.3"
 
 [features]
 default = ["builder"]
-ser = ["serde", "serde_derive"]
+ser = ["serde"]
 builder = ["derive_builder"]
 
 [profile.test]
