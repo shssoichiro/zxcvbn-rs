@@ -21,7 +21,7 @@ use std::time::Duration;
 #[macro_use]
 extern crate quickcheck;
 
-use scoring::Score;
+pub use scoring::Score;
 use time_estimates::CrackTimes;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::wasm_bindgen;

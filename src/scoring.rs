@@ -3,6 +3,7 @@ use crate::matching::Match;
 use std::collections::HashMap;
 use std::{cmp, fmt::Display};
 
+/// Score of a password check.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum Score {
