@@ -36,7 +36,7 @@ impl TryFrom<u8> for Score {
             2 => Self::Two,
             3 => Self::Three,
             4 => Self::Four,
-            _ => return Err("score must be in the range 0-4"),
+            _ => return Err("zxcvbn entropy score must be in the range 0-4"),
         })
     }
 }
