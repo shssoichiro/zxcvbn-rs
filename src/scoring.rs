@@ -20,15 +20,15 @@ pub enum Score {
     Four,
 }
 
-impl From<Score> for i8 {
-    fn from(score: Score) -> i8 {
-        score as i8
+impl From<Score> for u8 {
+    fn from(score: Score) -> u8 {
+        score as u8
     }
 }
 
 impl Display for Score {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", i8::from(*self))
+        write!(f, "{}", u8::from(*self))
     }
 }
 
