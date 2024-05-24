@@ -26,6 +26,21 @@ impl From<Score> for u8 {
     }
 }
 
+impl TryFrom<u8> for Score {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Ok(match value {
+            0 => Self::Zero,
+            1 => Self::One,
+            2 => Self::Two,
+            3 => Self::Three,
+            4 => Self::Four,
+            _ => return Err("score must be in the range 0-4"),
+        })
+    }
+}
+
 impl Display for Score {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", u8::from(*self))
