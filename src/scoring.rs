@@ -3,7 +3,7 @@ use crate::matching::Match;
 use std::collections::HashMap;
 use std::{cmp, fmt::Display};
 
-/// Score of a password check.
+/// Score generated when measuring the entropy of a password.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "ser", derive(serde::Serialize, serde::Deserialize))]
