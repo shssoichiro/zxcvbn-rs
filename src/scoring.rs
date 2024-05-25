@@ -7,6 +7,7 @@ use std::{cmp, fmt::Display};
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 #[cfg_attr(feature = "ser", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "ser", serde(try_from = "u8", into = "u8"))]
 pub enum Score {
     /// Can be cracked with 10^3 guesses or less.
     Zero = 0,
@@ -1142,5 +1143,15 @@ mod tests {
             };
             assert_eq!(scoring::l33t_variations(&p, word), variants);
         }
+    }
+
+    #[cfg(feature = "ser")]
+    #[test]
+    fn serde_score() {
+        let score = scoring::Score::One;
+        let value = serde_json::to_value(&score).unwrap();
+        assert!(matches!(value, serde_json::Value::Number(_)));
+        let new_score = serde_json::from_value(value).unwrap();
+        assert_eq!(scoring::Score::One, new_score);
     }
 }
