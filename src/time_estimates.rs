@@ -26,7 +26,7 @@ use crate::scoring::Score;
 
 /// Back-of-the-envelope crack time estimations, in seconds, based on a few scenarios.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct CrackTimes {
     guesses: u64,
 }
@@ -74,7 +74,7 @@ impl CrackTimes {
 
 /// Represents the time to crack a password.
 #[derive(Copy, Clone, Debug)]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 #[cfg_attr(feature = "ser", serde(untagged))]
 pub enum CrackTimeSeconds {
     /// The number of seconds needed to crack a password, expressed as an integer.

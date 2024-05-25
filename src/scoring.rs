@@ -3,8 +3,11 @@ use crate::matching::Match;
 use std::collections::HashMap;
 use std::{cmp, fmt::Display};
 
+/// Score generated when measuring the entropy of a password.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
+#[cfg_attr(feature = "ser", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "ser", serde(try_from = "u8", into = "u8"))]
 pub enum Score {
     /// Can be cracked with 10^3 guesses or less.
     Zero = 0,
@@ -18,22 +21,30 @@ pub enum Score {
     Four,
 }
 
-impl From<Score> for i8 {
-    fn from(score: Score) -> i8 {
-        score as i8
+impl From<Score> for u8 {
+    fn from(score: Score) -> u8 {
+        score as u8
+    }
+}
+
+impl TryFrom<u8> for Score {
+    type Error = &'static str;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Ok(match value {
+            0 => Self::Zero,
+            1 => Self::One,
+            2 => Self::Two,
+            3 => Self::Three,
+            4 => Self::Four,
+            _ => return Err("zxcvbn entropy score must be in the range 0-4"),
+        })
     }
 }
 
 impl Display for Score {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", i8::from(*self))
-    }
-}
-
-#[cfg(feature = "ser")]
-impl serde::Serialize for Score {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        i8::from(*self).serialize(serializer)
+        write!(f, "{}", u8::from(*self))
     }
 }
 
@@ -1132,5 +1143,15 @@ mod tests {
             };
             assert_eq!(scoring::l33t_variations(&p, word), variants);
         }
+    }
+
+    #[cfg(feature = "ser")]
+    #[test]
+    fn serde_score() {
+        let score = scoring::Score::One;
+        let value = serde_json::to_value(&score).unwrap();
+        assert!(matches!(value, serde_json::Value::Number(_)));
+        let new_score = serde_json::from_value(value).unwrap();
+        assert_eq!(scoring::Score::One, new_score);
     }
 }

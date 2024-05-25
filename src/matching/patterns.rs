@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 /// Pattern type used to detect a match
 #[derive(Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 #[cfg_attr(feature = "ser", serde(tag = "pattern"))]
 #[cfg_attr(feature = "ser", serde(rename_all = "lowercase"))]
 pub enum MatchPattern {
@@ -44,7 +44,7 @@ impl MatchPattern {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct DictionaryPattern {
     /// Word that has been found in a dictionary.
     pub matched_word: String,
@@ -72,7 +72,7 @@ pub struct DictionaryPattern {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct SpatialPattern {
     /// Name of the graph for which a spatial match has been found.
     pub graph: String,
@@ -86,7 +86,7 @@ pub struct SpatialPattern {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct RepeatPattern {
     /// Base token that repeats in the matched pattern.
     pub base_token: String,
@@ -102,7 +102,7 @@ pub struct RepeatPattern {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct SequencePattern {
     /// Name of the sequence that was matched.
     pub sequence_name: &'static str,
@@ -116,7 +116,7 @@ pub struct SequencePattern {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct RegexPattern {
     /// Name of the regular expression that was matched.
     pub regex_name: &'static str,
@@ -128,7 +128,7 @@ pub struct RegexPattern {
 #[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(feature = "builder", derive(Builder))]
 #[cfg_attr(feature = "builder", builder(default))]
-#[cfg_attr(feature = "ser", derive(Serialize))]
+#[cfg_attr(feature = "ser", derive(serde::Serialize))]
 pub struct DatePattern {
     /// Separator of a date that was matched.
     pub separator: String,
