@@ -1,3 +1,8 @@
+**Version 3.0.1**
+
+- Fix a bug in 3.0.0 where the `Score` enum was private
+- Fix a bug where some structs that were intended to implement `Serialize` when the `ser` feature was enabled did not implement it
+
 **Version 3.0.0**
 
 - [Breaking] Avoid the possibility for zxcvbn to error
