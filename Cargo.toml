@@ -39,7 +39,7 @@ serde_json = "1"
 criterion = "0.5"
 serde_json = "1"
 
-[target.'cfg(all(target_arch = "wasm32", not(feature = "non-js")))'.dev-dependencies]
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 criterion = { version = "0.5", default-features = false }
 wasm-bindgen-test = "0.3"
 
@@ -47,7 +47,7 @@ wasm-bindgen-test = "0.3"
 default = ["builder"]
 ser = ["serde"]
 builder = ["derive_builder"]
-non-js = []
+custom_wasm_env = []
 
 [profile.test]
 opt-level = 2

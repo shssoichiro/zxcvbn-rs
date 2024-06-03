@@ -77,7 +77,7 @@ lazy_static! {
     pub(crate) static ref REFERENCE_YEAR: i32 = time::OffsetDateTime::now_utc().year();
 }
 
-#[cfg(all(target_arch = "wasm32", not(feature = "non-js")))]
+#[cfg(all(target_arch = "wasm32", not(feature = "custom_wasm_env")))]
 lazy_static! {
     pub(crate) static ref REFERENCE_YEAR: i32 = web_sys::js_sys::Date::new_0()
         .get_full_year()
@@ -85,7 +85,7 @@ lazy_static! {
         .unwrap();
 }
 
-#[cfg(all(target_arch = "wasm32", feature = "non-js"))]
+#[cfg(all(target_arch = "wasm32", feature = "custom_wasm_env"))]
 lazy_static! {
     pub(crate) static ref REFERENCE_YEAR: i32 = {
         #[link(wasm_import_module = "zxcvbn")]

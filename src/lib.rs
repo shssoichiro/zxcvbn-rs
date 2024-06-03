@@ -17,7 +17,7 @@ extern crate quickcheck;
 
 pub use scoring::Score;
 use time_estimates::CrackTimes;
-#[cfg(all(target_arch = "wasm32", not(feature = "non-js")))]
+#[cfg(all(target_arch = "wasm32", not(feature = "custom_wasm_env")))]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 pub use crate::matching::Match;
@@ -41,7 +41,7 @@ where
     (result, calc_time)
 }
 
-#[cfg(all(target_arch = "wasm32", not(feature = "non-js")))]
+#[cfg(all(target_arch = "wasm32", not(feature = "custom_wasm_env")))]
 #[allow(non_upper_case_globals)]
 fn time_scoped<F, R>(f: F) -> (R, Duration)
 where
@@ -60,7 +60,7 @@ where
     (result, calc_time)
 }
 
-#[cfg(all(target_arch = "wasm32", feature = "non-js"))]
+#[cfg(all(target_arch = "wasm32", feature = "custom_wasm_env"))]
 fn time_scoped<F, R>(f: F) -> (R, Duration)
 where
     F: FnOnce() -> R,
