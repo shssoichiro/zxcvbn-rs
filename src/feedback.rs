@@ -292,7 +292,7 @@ fn get_dictionary_match_feedback(
 mod tests {
     use super::*;
 
-    #[cfg(target_arch = "wasm32")]
+    #[cfg(all(target_arch = "wasm32", not(feature = "non-js")))]
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[cfg_attr(not(target_arch = "wasm32"), test)]

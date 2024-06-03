@@ -1,7 +1,6 @@
 #![doc = include_str!("../README.md")]
 #![recursion_limit = "128"]
 #![warn(missing_docs)]
-#![forbid(unsafe_code)]
 
 #[macro_use]
 #[cfg(feature = "builder")]
@@ -18,7 +17,7 @@ extern crate quickcheck;
 
 pub use scoring::Score;
 use time_estimates::CrackTimes;
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", not(feature = "non-js")))]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 pub use crate::matching::Match;
@@ -42,7 +41,7 @@ where
     (result, calc_time)
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", not(feature = "non-js")))]
 #[allow(non_upper_case_globals)]
 fn time_scoped<F, R>(f: F) -> (R, Duration)
 where
@@ -59,6 +58,27 @@ where
     let result = f();
     let calc_time = std::time::Duration::from_secs_f64((performance.now() - start_time) / 1000.0);
     (result, calc_time)
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "non-js"))]
+fn time_scoped<F, R>(f: F) -> (R, Duration)
+where
+    F: FnOnce() -> R,
+{
+    #[link(wasm_import_module = "zxcvbn")]
+    extern "C" {
+        fn unix_time_milliseconds_imported() -> u64;
+    }
+    let start_time = unsafe { 
+        unix_time_milliseconds_imported()
+    };
+    let result = f();
+    let end_time = unsafe { 
+        unix_time_milliseconds_imported()
+    };
+
+    let duration = std::time::Duration::from_millis(end_time - start_time);
+    (result, duration)
 }
 
 /// Contains the results of an entropy calculation
