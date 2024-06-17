@@ -1,6 +1,8 @@
 //! Contains structs and methods related to generating feedback strings
 //! for providing help for the user to generate stronger passwords.
 
+use itertools::Itertools;
+
 use crate::matching::patterns::*;
 use crate::matching::Match;
 use crate::{frequency_lists::DictionaryType, scoring::Score};
@@ -150,6 +152,17 @@ impl Feedback {
     /// E.g. "Add another word or two".
     pub fn suggestions(&self) -> &[Suggestion] {
         &self.suggestions
+    }
+}
+
+impl fmt::Display for Feedback {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(warning) = self.warning {
+            write!(f, "{} ", warning)?;
+        }
+        write!(f, "{}", self.suggestions.iter().join(" "))?;
+
+        Ok(())
     }
 }
 
@@ -319,6 +332,18 @@ mod tests {
         assert_eq!(
             entropy.feedback.unwrap().warning,
             Some(Warning::ThisIsSimilarToACommonlyUsedPassword)
+        );
+    }
+
+    #[test]
+    fn test_feedback_display() {
+        let feedback = Feedback {
+            warning: Some(Warning::ThisIsATop10Password),
+            suggestions: vec![Suggestion::UseAFewWordsAvoidCommonPhrases],
+        };
+        assert_eq!(
+            format!("{}", feedback),
+            "This is a top-10 common password. Use a few words, avoid common phrases."
         );
     }
 }
