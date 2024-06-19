@@ -69,13 +69,9 @@ where
     extern "C" {
         fn unix_time_milliseconds_imported() -> u64;
     }
-    let start_time = unsafe { 
-        unix_time_milliseconds_imported()
-    };
+    let start_time = unsafe { unix_time_milliseconds_imported() };
     let result = f();
-    let end_time = unsafe { 
-        unix_time_milliseconds_imported()
-    };
+    let end_time = unsafe { unix_time_milliseconds_imported() };
 
     let duration = std::time::Duration::from_millis(end_time - start_time);
     (result, duration)
