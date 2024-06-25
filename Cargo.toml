@@ -22,7 +22,7 @@ regex = "1"
 time = { version = "0.3" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom = { version = "0.2", features = ["js"] }
+chrono = "0.4.38"
 wasm-bindgen = "0.2"
 web-sys = { version = "0.3", features = ["Performance"] }
 
@@ -41,12 +41,14 @@ serde_json = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 criterion = { version = "0.5", default-features = false }
+getrandom = { version = "0.2", features = ["js"] }
 wasm-bindgen-test = "0.3"
 
 [features]
 default = ["builder"]
 ser = ["serde"]
 builder = ["derive_builder"]
+custom_wasm_env = []
 
 [profile.test]
 opt-level = 2
