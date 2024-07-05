@@ -77,12 +77,29 @@ lazy_static! {
     pub(crate) static ref REFERENCE_YEAR: i32 = time::OffsetDateTime::now_utc().year();
 }
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(all(target_arch = "wasm32", not(feature = "custom_wasm_env")))]
 lazy_static! {
     pub(crate) static ref REFERENCE_YEAR: i32 = web_sys::js_sys::Date::new_0()
         .get_full_year()
         .try_into()
         .unwrap();
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "custom_wasm_env"))]
+lazy_static! {
+    pub(crate) static ref REFERENCE_YEAR: i32 = {
+        #[link(wasm_import_module = "zxcvbn")]
+        extern "C" {
+            fn unix_time_milliseconds_imported() -> u64;
+        }
+        let unix_millis = unsafe { unix_time_milliseconds_imported() };
+
+        use chrono::Datelike;
+        chrono::DateTime::<chrono::Utc>::from(
+            std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_millis(unix_millis),
+        )
+        .year()
+    };
 }
 
 const MIN_YEAR_SPACE: i32 = 20;

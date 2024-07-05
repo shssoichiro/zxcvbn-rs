@@ -96,4 +96,6 @@ jobs:
         run: cargo build --target wasm32-unknown-unknown --tests --benches
 
       - name: Run tests (wasm, all features)
-        run: wasm-pack test --node --all-features
+        env:
+          ALL_WASM_BINDGEN_FEATURES: "default,ser,builder"
+        run: wasm-pack test --node --features $ALL_WASM_BINDGEN_FEATURES
