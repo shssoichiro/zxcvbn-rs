@@ -1,3 +1,8 @@
+**Version 3.1.0**
+
+- Add `Display` to `Feedback`
+- Add support for WASM targets running in a custom runtime
+
 **Version 3.0.1**
 
 - Fix a bug in 3.0.0 where the `Score` enum was private
