@@ -67,6 +67,40 @@ impl fmt::Display for Warning {
     }
 }
 
+impl Warning {
+    /// Return as a string slice.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Warning::StraightRowsOfKeysAreEasyToGuess => "Straight rows of keys are easy to guess.",
+            Warning::ShortKeyboardPatternsAreEasyToGuess => {
+                "Short keyboard patterns are easy to guess."
+            }
+            Warning::RepeatsLikeAaaAreEasyToGuess => "Repeats like \"aaa\" are easy to guess.",
+            Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess => {
+                "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
+            }
+            Warning::ThisIsATop10Password => "This is a top-10 common password.",
+            Warning::ThisIsATop100Password => "This is a top-100 common password.",
+            Warning::ThisIsACommonPassword => "This is a very common password.",
+            Warning::ThisIsSimilarToACommonlyUsedPassword => {
+                "This is similar to a commonly used password."
+            }
+            Warning::SequencesLikeAbcAreEasyToGuess => {
+                "Sequences like abc or 6543 are easy to guess."
+            }
+            Warning::RecentYearsAreEasyToGuess => "Recent years are easy to guess.",
+            Warning::AWordByItselfIsEasyToGuess => "A word by itself is easy to guess.",
+            Warning::DatesAreOftenEasyToGuess => "Dates are often easy to guess.",
+            Warning::NamesAndSurnamesByThemselvesAreEasyToGuess => {
+                "Names and surnames by themselves are easy to guess."
+            }
+            Warning::CommonNamesAndSurnamesAreEasyToGuess => {
+                "Common names and surnames are easy to guess."
+            }
+        }
+    }
+}
+
 /// A suggestion helps to choose a better password.
 #[derive(Debug, Copy, Clone, PartialEq)]
 #[cfg_attr(feature = "ser", derive(serde::Deserialize, serde::Serialize))]
@@ -126,6 +160,45 @@ impl fmt::Display for Suggestion {
             }
             Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou => {
                 write!(f, "Avoid dates and years that are associated with you.")
+            }
+        }
+    }
+}
+
+impl Suggestion {
+    /// Return as a string slice.
+    pub fn as_str(&self) -> &str {
+        match self {
+            Suggestion::UseAFewWordsAvoidCommonPhrases => "Use a few words, avoid common phrases.",
+            Suggestion::NoNeedForSymbolsDigitsOrUppercaseLetters => {
+                "No need for symbols, digits, or uppercase letters."
+            }
+            Suggestion::AddAnotherWordOrTwo => {
+                "Add another word or two. Uncommon words are better."
+            }
+            Suggestion::CapitalizationDoesntHelpVeryMuch => {
+                "Capitalization doesn't help very much."
+            }
+            Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase => {
+                "All-uppercase is almost as easy to guess as all-lowercase."
+            }
+            Suggestion::ReversedWordsArentMuchHarderToGuess => {
+                "Reversed words aren't much harder to guess."
+            }
+            Suggestion::PredictableSubstitutionsDontHelpVeryMuch => {
+                "Predictable substitutions like '@' instead of 'a' don't help very much."
+            }
+            Suggestion::UseALongerKeyboardPatternWithMoreTurns => {
+                "Use a longer keyboard pattern with more turns."
+            }
+            Suggestion::AvoidRepeatedWordsAndCharacters => "Avoid repeated words and characters.",
+            Suggestion::AvoidSequences => "Avoid sequences.",
+            Suggestion::AvoidRecentYears => "Avoid recent years.",
+            Suggestion::AvoidYearsThatAreAssociatedWithYou => {
+                "Avoid years that are associated with you."
+            }
+            Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou => {
+                "Avoid dates and years that are associated with you."
             }
         }
     }
