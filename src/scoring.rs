@@ -852,20 +852,17 @@ mod tests {
             regex_name: "recent_year".to_owned(),
             regex_match: vec![token.to_string()],
         };
-        assert_eq!(
-            p.estimate(token),
-            (*scoring::REFERENCE_YEAR - 1972).abs() as u64
-        );
+        assert_eq!(p.estimate(token), (*scoring::REFERENCE_YEAR - 1972) as u64);
     }
 
     #[test]
     fn test_regex_guesses_recent_year() {
-        let token = "2005";
+        let token = (*scoring::REFERENCE_YEAR - 15).to_string();
         let mut p = RegexPattern {
             regex_name: "recent_year".to_owned(),
             regex_match: vec![token.to_string()],
         };
-        assert_eq!(p.estimate(token), scoring::MIN_YEAR_SPACE as u64);
+        assert_eq!(p.estimate(&token), scoring::MIN_YEAR_SPACE as u64);
     }
 
     #[test]
