@@ -84,9 +84,16 @@ where
 #[derive(Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "ser", derive(serde::Deserialize, serde::Serialize))]
 pub struct Entropy {
-    /// Estimated guesses needed to crack the password
+    /// Estimated guesses needed to crack the password.
+    ///
+    /// This value saturates at `u64::MAX` for very large search spaces.
+    /// Use `guesses_log10` as the authoritative magnitude when exact
+    /// guesses no longer fit in `u64`.
     guesses: u64,
-    /// Order of magnitude of `guesses`
+    /// Base-10 order of magnitude of the estimated guesses.
+    ///
+    /// Unlike `guesses`, this continues to track the unsaturated estimate
+    /// when the integer count has flattened at `u64::MAX`.
     #[cfg_attr(
         feature = "ser",
         serde(deserialize_with = "crate::serialization_utils::deserialize_f64_null_as_nan")
@@ -107,16 +114,25 @@ pub struct Entropy {
 
 impl Entropy {
     /// The estimated number of guesses needed to crack the password.
+    ///
+    /// This value saturates at `u64::MAX` for very large search spaces.
+    /// Use `guesses_log10()` when you need the true order of magnitude.
     pub fn guesses(&self) -> u64 {
         self.guesses
     }
 
-    /// The order of magnitude of `guesses`.
+    /// The base-10 order of magnitude of the estimated guesses.
+    ///
+    /// This is the authoritative magnitude for large search spaces,
+    /// including cases where `guesses()` has saturated at `u64::MAX`.
     pub fn guesses_log10(&self) -> f64 {
         self.guesses_log10
     }
 
     /// List of back-of-the-envelope crack time estimations based on a few scenarios.
+    ///
+    /// These estimates continue to use the unsaturated internal magnitude
+    /// when `guesses()` has saturated at `u64::MAX`.
     pub fn crack_times(&self) -> time_estimates::CrackTimes {
         self.crack_times
     }
@@ -173,7 +189,8 @@ pub fn zxcvbn(password: &str, user_inputs: &[&str]) -> Entropy {
         let matches = matching::omnimatch(&password, &sanitized_inputs);
         scoring::most_guessable_match_sequence(&password, &matches, false)
     });
-    let (crack_times, score) = time_estimates::estimate_attack_times(result.guesses);
+    let (crack_times, score) =
+        time_estimates::estimate_attack_times(result.guesses, result.guesses_log10);
     let feedback = feedback::get_feedback(score, &result.sequence);
 
     Entropy {
@@ -233,7 +250,9 @@ mod tests {
 
             let original_equal_to_deserialized_version =
                 (entropy.guesses == deserialized_entropy.guesses) &&
-                (entropy.crack_times == deserialized_entropy.crack_times) &&
+                (entropy.crack_times.guesses() == deserialized_entropy.crack_times.guesses()) &&
+                (entropy.crack_times.guesses_log10().to_bits() & MASK
+                    == deserialized_entropy.crack_times.guesses_log10().to_bits() & MASK) &&
                 (entropy.score == deserialized_entropy.score) &&
                 (entropy.feedback == deserialized_entropy.feedback) &&
                 (entropy.sequence == deserialized_entropy.sequence) &&
@@ -333,6 +352,7 @@ mod tests {
         let password = "!QASW@#EDFR$%TGHY^&UJKI*(OL";
         let entropy = zxcvbn(password, &[]);
         assert_eq!(entropy.guesses, u64::MAX);
+        assert!(entropy.guesses_log10 > (u64::MAX as f64).log10());
         assert_eq!(entropy.score, Score::Four);
     }
 

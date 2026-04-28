@@ -1,7 +1,7 @@
 use crate::matching::patterns::*;
 use crate::matching::Match;
 use std::collections::HashMap;
-use std::{cmp, fmt::Display};
+use std::{cmp, cmp::Ordering, fmt::Display};
 
 /// Score generated when measuring the entropy of a password.
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
@@ -50,9 +50,14 @@ impl Display for Score {
 
 #[derive(Debug, Clone)]
 pub struct GuessCalculation {
-    /// Estimated guesses needed to crack the password
+    /// Estimated guesses needed to crack the password.
+    ///
+    /// This value saturates at `u64::MAX` for very large search spaces.
     pub guesses: u64,
-    /// Order of magnitude of `guesses`
+    /// Base-10 order of magnitude of the estimated guesses.
+    ///
+    /// This continues to track the unsaturated estimate when `guesses`
+    /// has saturated at `u64::MAX`.
     pub guesses_log10: f64,
     /// The list of patterns the guess calculation was based on
     pub sequence: Vec<Match>,
@@ -68,8 +73,13 @@ struct Optimal {
     /// same structure as optimal.m -- holds the product term Prod(m.guesses for m in sequence).
     /// optimal.pi allows for fast (non-looping) updates to the minimization function.
     pi: Vec<HashMap<usize, u64>>,
+    /// Same structure as optimal.pi, but storing the unsaturated base-10 logarithm of the
+    /// product term.
+    pi_log10: Vec<HashMap<usize, f64>>,
     /// same structure as optimal.m -- holds the overall metric.
     g: Vec<HashMap<usize, u64>>,
+    /// Same structure as optimal.g, but storing the unsaturated base-10 logarithm of the metric.
+    g_log10: Vec<HashMap<usize, f64>>,
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -128,7 +138,9 @@ pub fn most_guessable_match_sequence(
     let mut optimal = Optimal {
         m: vec![HashMap::new(); n],
         pi: vec![HashMap::new(); n],
+        pi_log10: vec![HashMap::new(); n],
         g: vec![HashMap::new(); n],
+        g_log10: vec![HashMap::new(); n],
     };
 
     /// helper: considers whether a length-l sequence ending at match m is better (fewer guesses)
@@ -142,14 +154,17 @@ pub fn most_guessable_match_sequence(
     ) {
         let k = m.j;
         let mut pi = estimate_guesses(&mut m, password);
+        let mut pi_log10 = estimate_guesses_log10(&m, password);
         if len > 1 {
             // we're considering a length-l sequence ending with match m:
             // obtain the product term in the minimization function by multiplying m's guesses
             // by the product of the length-(l-1) sequence ending just before m, at m.i - 1.
             pi = pi.saturating_mul(optimal.pi[m.i - 1][&(len - 1)]);
+            pi_log10 += optimal.pi_log10[m.i - 1][&(len - 1)];
         }
         // calculate the minimization func
         let mut guesses = (factorial(len) as u64).saturating_mul(pi);
+        let mut guesses_log10 = log10_factorial(len) + pi_log10;
         if !exclude_additive {
             let additive = if len == 1 {
                 1
@@ -159,6 +174,14 @@ pub fn most_guessable_match_sequence(
                 })
             };
             guesses = guesses.saturating_add(additive);
+            guesses_log10 = log10_sum(
+                guesses_log10,
+                if len == 1 {
+                    0.0
+                } else {
+                    (len - 1) as f64 * (MIN_GUESSES_BEFORE_GROWING_SEQUENCE as f64).log10()
+                },
+            );
         }
         // update state if new best.
         // first see if any competing sequences covering this prefix, with l or fewer matches,
@@ -167,14 +190,23 @@ pub fn most_guessable_match_sequence(
             if competing_l > len {
                 continue;
             }
-            if competing_guesses <= guesses {
+            let competing_guesses_log10 = optimal.g_log10[k][&competing_l];
+            if compare_guesses(
+                competing_guesses,
+                competing_guesses_log10,
+                guesses,
+                guesses_log10,
+            ) != Ordering::Greater
+            {
                 return;
             }
         }
         // this sequence might be part of the final optimal sequence.
         optimal.g[k].insert(len, guesses);
+        optimal.g_log10[k].insert(len, guesses_log10);
         optimal.m[k].insert(len, m);
         optimal.pi[k].insert(len, pi);
+        optimal.pi_log10[k].insert(len, pi_log10);
     }
 
     /// helper: evaluate bruteforce matches ending at k.
@@ -221,10 +253,20 @@ pub fn most_guessable_match_sequence(
         // find the final best sequence length and score
         let mut l = None;
         let mut g = None;
+        let mut g_log10 = None;
         for (candidate_l, candidate_g) in &optimal.g[k] {
-            if g.is_none() || *candidate_g < *g.as_ref().unwrap() {
+            let candidate_g_log10 = optimal.g_log10[k][candidate_l];
+            if g.is_none()
+                || compare_guesses(
+                    *candidate_g,
+                    candidate_g_log10,
+                    g.unwrap(),
+                    g_log10.unwrap(),
+                ) == Ordering::Less
+            {
                 l = Some(*candidate_l);
                 g = Some(*candidate_g);
+                g_log10 = Some(candidate_g_log10);
             }
         }
 
@@ -261,10 +303,15 @@ pub fn most_guessable_match_sequence(
     } else {
         optimal.g[n - 1][&optimal_l]
     };
+    let guesses_log10 = if password.is_empty() || guesses != u64::MAX {
+        (guesses as f64).log10()
+    } else {
+        optimal.g_log10[n - 1][&optimal_l]
+    };
 
     GuessCalculation {
         guesses,
-        guesses_log10: (guesses as f64).log10(),
+        guesses_log10,
         sequence: optimal_match_sequence,
     }
 }
@@ -292,8 +339,82 @@ fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
     m.guesses.unwrap()
 }
 
+fn compare_guesses(
+    guesses_a: u64,
+    guesses_log10_a: f64,
+    guesses_b: u64,
+    guesses_log10_b: f64,
+) -> Ordering {
+    match guesses_a.cmp(&guesses_b) {
+        Ordering::Equal if guesses_a == u64::MAX => guesses_log10_a
+            .partial_cmp(&guesses_log10_b)
+            .unwrap_or(Ordering::Equal),
+        ordering => ordering,
+    }
+}
+
+fn estimate_guesses_log10(m: &Match, password: &str) -> f64 {
+    if let Some(guesses) = m.guesses {
+        if guesses != u64::MAX {
+            return (guesses as f64).log10();
+        }
+    }
+
+    let min_guesses_log10 = if m.token.chars().count() < password.chars().count() {
+        if m.token.chars().count() == 1 {
+            (MIN_SUBMATCH_GUESSES_SINGLE_CHAR as f64).log10()
+        } else {
+            (MIN_SUBMATCH_GUESSES_MULTI_CHAR as f64).log10()
+        }
+    } else {
+        0.0
+    };
+
+    m.pattern.estimate_log10(&m.token).max(min_guesses_log10)
+}
+
+fn log10_sum(a: f64, b: f64) -> f64 {
+    if a == f64::NEG_INFINITY {
+        return b;
+    }
+    if b == f64::NEG_INFINITY {
+        return a;
+    }
+
+    let (hi, lo) = if a >= b { (a, b) } else { (b, a) };
+    hi + (1.0 + 10f64.powf(lo - hi)).log10()
+}
+
+fn log10_factorial(n: usize) -> f64 {
+    (1..=n).map(|i| (i as f64).log10()).sum()
+}
+
+fn log10_n_ck(n: usize, k: usize) -> f64 {
+    if k > n {
+        f64::NEG_INFINITY
+    } else if k == 0 {
+        0.0
+    } else {
+        let k = cmp::min(k, n - k);
+        let numerator: f64 = ((n - k + 1)..=n).map(|i| (i as f64).log10()).sum();
+        let denominator: f64 = (1..=k).map(|i| (i as f64).log10()).sum();
+        numerator - denominator
+    }
+}
+
+fn log10_sum_iter<I>(iter: I) -> f64
+where
+    I: IntoIterator<Item = f64>,
+{
+    iter.into_iter().fold(f64::NEG_INFINITY, log10_sum)
+}
+
 trait Estimator {
     fn estimate(&mut self, token: &str) -> u64;
+}
+
+trait EstimatorLog {
+    fn estimate_log10(&self, token: &str) -> f64;
 }
 
 impl Estimator for MatchPattern {
@@ -326,6 +447,27 @@ impl Estimator for MatchPattern {
     }
 }
 
+impl EstimatorLog for MatchPattern {
+    fn estimate_log10(&self, token: &str) -> f64 {
+        match self {
+            MatchPattern::Dictionary(p) => p.estimate_log10(token),
+            MatchPattern::Spatial(p) => p.estimate_log10(token),
+            MatchPattern::Repeat(p) => p.estimate_log10(token),
+            MatchPattern::Sequence(p) => p.estimate_log10(token),
+            MatchPattern::Regex(p) => p.estimate_log10(token),
+            MatchPattern::Date(p) => p.estimate_log10(token),
+            MatchPattern::BruteForce => {
+                let token_len = token.chars().count();
+                if token_len == 1 {
+                    (MIN_SUBMATCH_GUESSES_SINGLE_CHAR as f64 + 1.0).log10()
+                } else {
+                    token_len as f64
+                }
+            }
+        }
+    }
+}
+
 impl Estimator for DictionaryPattern {
     fn estimate(&mut self, token: &str) -> u64 {
         let uppercase_variations = uppercase_variations(token);
@@ -337,6 +479,15 @@ impl Estimator for DictionaryPattern {
             * self.uppercase_variations
             * self.l33t_variations
             * if self.reversed { 2 } else { 1 }
+    }
+}
+
+impl EstimatorLog for DictionaryPattern {
+    fn estimate_log10(&self, token: &str) -> f64 {
+        (self.rank as f64).log10()
+            + uppercase_variations_log10(token)
+            + l33t_variations_log10(self, token)
+            + if self.reversed { 2.0f64.log10() } else { 0.0 }
     }
 }
 
@@ -388,6 +539,47 @@ fn l33t_variations(pattern: &DictionaryPattern, token: &str) -> u64 {
         }
     }
     variations
+}
+
+fn uppercase_variations_log10(token: &str) -> f64 {
+    if token.chars().all(char::is_lowercase) || token.to_lowercase().as_str() == token {
+        return 0.0;
+    }
+    if ((token.chars().next().unwrap().is_uppercase()
+        || token.chars().last().unwrap().is_uppercase())
+        && token.chars().filter(|&c| c.is_uppercase()).count() == 1)
+        || token.chars().all(char::is_uppercase)
+    {
+        return 2.0f64.log10();
+    }
+
+    let upper = token.chars().filter(|c| c.is_uppercase()).count();
+    let lower = token.chars().filter(|c| c.is_lowercase()).count();
+    log10_sum_iter((1..=cmp::min(upper, lower)).map(|i| log10_n_ck(upper + lower, i)))
+}
+
+fn l33t_variations_log10(pattern: &DictionaryPattern, token: &str) -> f64 {
+    if !pattern.l33t {
+        return 0.0;
+    }
+
+    let token = token.to_lowercase();
+    pattern
+        .sub
+        .as_ref()
+        .unwrap()
+        .iter()
+        .map(|(subbed, unsubbed)| {
+            let subbed_count = token.chars().filter(|c| c == subbed).count();
+            let unsubbed_count = token.chars().filter(|c| c == unsubbed).count();
+            if subbed_count == 0 || unsubbed_count == 0 {
+                2.0f64.log10()
+            } else {
+                let p = cmp::min(unsubbed_count, subbed_count);
+                log10_sum_iter((1..=p).map(|i| log10_n_ck(unsubbed_count + subbed_count, i)))
+            }
+        })
+        .sum()
 }
 
 fn n_ck(n: usize, k: usize) -> u64 {
@@ -446,6 +638,42 @@ impl Estimator for SpatialPattern {
     }
 }
 
+impl EstimatorLog for SpatialPattern {
+    fn estimate_log10(&self, token: &str) -> f64 {
+        let (starts, degree) = if ["qwerty", "dvorak"].contains(&self.graph.as_str()) {
+            (*KEYBOARD_STARTING_POSITIONS, *KEYBOARD_AVERAGE_DEGREE)
+        } else {
+            (*KEYPAD_STARTING_POSITIONS, *KEYPAD_AVERAGE_DEGREE)
+        };
+        let len = token.chars().count();
+        let mut guesses_log10 = f64::NEG_INFINITY;
+        for i in 2..=len {
+            let possible_turns = cmp::min(self.turns, i - 1);
+            for j in 1..=possible_turns {
+                guesses_log10 = log10_sum(
+                    guesses_log10,
+                    log10_n_ck(i - 1, j - 1)
+                        + (starts as f64).log10()
+                        + j as f64 * (degree as f64).log10(),
+                );
+            }
+        }
+        let shifted_count = self.shifted_count;
+        if shifted_count > 0 {
+            let unshifted_count = len - shifted_count;
+            guesses_log10 += if unshifted_count == 0 {
+                2.0f64.log10()
+            } else {
+                log10_sum_iter(
+                    (1..=cmp::min(shifted_count, unshifted_count))
+                        .map(|i| log10_n_ck(shifted_count + unshifted_count, i)),
+                )
+            };
+        }
+        guesses_log10
+    }
+}
+
 lazy_static! {
     static ref KEYBOARD_AVERAGE_DEGREE: u64 = calc_average_degree(&crate::adjacency_graphs::QWERTY);
     // slightly different for keypad/mac keypad, but close enough
@@ -465,6 +693,17 @@ fn calc_average_degree(graph: &HashMap<char, Vec<Option<&'static str>>>) -> u64 
 impl Estimator for RepeatPattern {
     fn estimate(&mut self, _: &str) -> u64 {
         self.base_guesses.saturating_mul(self.repeat_count as u64)
+    }
+}
+
+impl EstimatorLog for RepeatPattern {
+    fn estimate_log10(&self, _: &str) -> f64 {
+        let base_guesses_log10 = if self.base_guesses == u64::MAX {
+            most_guessable_match_sequence(&self.base_token, &self.base_matches, false).guesses_log10
+        } else {
+            (self.base_guesses as f64).log10()
+        };
+        base_guesses_log10 + (self.repeat_count as f64).log10()
     }
 }
 
@@ -490,6 +729,23 @@ impl Estimator for SequencePattern {
     }
 }
 
+impl EstimatorLog for SequencePattern {
+    fn estimate_log10(&self, token: &str) -> f64 {
+        let first_chr = token.chars().next().unwrap();
+        let mut base_guesses = if ['a', 'A', 'z', 'Z', '0', '1', '9'].contains(&first_chr) {
+            4
+        } else if first_chr.is_ascii_digit() {
+            10
+        } else {
+            26
+        };
+        if !self.ascending {
+            base_guesses *= 2;
+        }
+        (base_guesses as f64).log10() + (token.chars().count() as f64).log10()
+    }
+}
+
 impl Estimator for RegexPattern {
     fn estimate(&mut self, token: &str) -> u64 {
         if CHAR_CLASS_BASES.keys().any(|x| *x == self.regex_name) {
@@ -500,6 +756,23 @@ impl Estimator for RegexPattern {
                     let year_space =
                         (self.regex_match[0].parse::<i32>().unwrap() - *REFERENCE_YEAR).abs();
                     cmp::max(year_space, MIN_YEAR_SPACE) as u64
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+}
+
+impl EstimatorLog for RegexPattern {
+    fn estimate_log10(&self, token: &str) -> f64 {
+        if CHAR_CLASS_BASES.keys().any(|x| *x == self.regex_name) {
+            token.chars().count() as f64 * (CHAR_CLASS_BASES[&*self.regex_name] as f64).log10()
+        } else {
+            match &*self.regex_name {
+                "recent_year" => {
+                    let year_space =
+                        (self.regex_match[0].parse::<i32>().unwrap() - *REFERENCE_YEAR).abs();
+                    (cmp::max(year_space, MIN_YEAR_SPACE) as f64).log10()
                 }
                 _ => unreachable!(),
             }
@@ -533,6 +806,19 @@ impl Estimator for DatePattern {
     }
 }
 
+impl EstimatorLog for DatePattern {
+    fn estimate_log10(&self, _: &str) -> f64 {
+        let year_space = cmp::max((self.year - *REFERENCE_YEAR).abs(), MIN_YEAR_SPACE);
+        (year_space as f64).log10()
+            + 365.0f64.log10()
+            + if self.separator.is_empty() {
+                0.0
+            } else {
+                4.0f64.log10()
+            }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::matching::patterns::*;
@@ -540,6 +826,7 @@ mod tests {
     use crate::scoring;
     use crate::scoring::Estimator;
     use quickcheck::TestResult;
+    use std::cmp::Ordering;
     use std::collections::HashMap;
 
     #[test]
@@ -763,6 +1050,42 @@ mod tests {
     }
 
     #[test]
+    fn test_compare_guesses_uses_log10_for_saturated_values() {
+        assert_eq!(
+            scoring::compare_guesses(u64::MAX, 20.0, u64::MAX, 21.0),
+            Ordering::Less
+        );
+        assert_eq!(
+            scoring::compare_guesses(u64::MAX, 21.0, u64::MAX, 20.0),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn test_calc_guesses_log10_returns_cached_value_when_unsaturated() {
+        let m = Match {
+            guesses: Some(1_000_000),
+            ..Match::default()
+        };
+        assert_eq!(scoring::estimate_guesses_log10(&m, ""), 6.0);
+    }
+
+    #[test]
+    fn test_calc_guesses_log10_returns_true_value_when_saturated() {
+        let token = "A9!bC8@dE7#fG6$hI5%jK4";
+        let mut m = Match {
+            pattern: MatchPattern::BruteForce,
+            token: token.to_string(),
+            ..Match::default()
+        };
+        assert_eq!(scoring::estimate_guesses(&mut m, token), u64::MAX);
+        assert_eq!(
+            scoring::estimate_guesses_log10(&m, token),
+            token.chars().count() as f64
+        );
+    }
+
+    #[test]
     fn test_calc_guesses_delegates_based_on_pattern() {
         let mut p = DatePattern {
             year: 1977,
@@ -808,6 +1131,49 @@ mod tests {
             let expected_guesses = base_guesses * repeat_count as u64;
             assert_eq!(p.estimate(token), expected_guesses);
         }
+    }
+
+    #[test]
+    fn test_search_reports_true_guesses_log10_when_guesses_saturate() {
+        let password = "A9!bC8@dE7#fG6$hI5%jK4";
+        let result = scoring::most_guessable_match_sequence(password, &[], false);
+        assert_eq!(result.guesses, u64::MAX);
+        assert!((result.guesses_log10 - password.chars().count() as f64).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_search_prefers_lower_log10_when_saturated_candidates_share_u64_max() {
+        let password = "a".repeat(100);
+        let high_log10_match = Match {
+            i: 0,
+            j: password.chars().count() - 1,
+            token: password.clone(),
+            guesses: Some(u64::MAX),
+            pattern: MatchPattern::BruteForce,
+        };
+        let low_log10_match = Match {
+            i: 0,
+            j: password.chars().count() - 1,
+            token: password.clone(),
+            guesses: Some(u64::MAX),
+            pattern: MatchPattern::Sequence(SequencePattern {
+                sequence_name: "lower".to_owned(),
+                sequence_space: 26,
+                ascending: true,
+            }),
+        };
+
+        let result = scoring::most_guessable_match_sequence(
+            &password,
+            &[high_log10_match, low_log10_match.clone()],
+            true,
+        );
+        assert_eq!(result.guesses, u64::MAX);
+        assert_eq!(result.sequence, vec![low_log10_match]);
+        assert!(
+            (result.guesses_log10 - (4.0f64 * password.chars().count() as f64).log10()).abs()
+                < f64::EPSILON
+        );
     }
 
     #[test]
@@ -1165,7 +1531,7 @@ mod tests {
     #[test]
     fn serde_score() {
         let score = scoring::Score::One;
-        let value = serde_json::to_value(&score).unwrap();
+        let value = serde_json::to_value(score).unwrap();
         assert!(matches!(value, serde_json::Value::Number(_)));
         let new_score = serde_json::from_value(value).unwrap();
         assert_eq!(scoring::Score::One, new_score);

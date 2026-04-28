@@ -21,14 +21,40 @@
 //! ```
 
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 use crate::scoring::Score;
 
 /// Back-of-the-envelope crack time estimations, in seconds, based on a few scenarios.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+///
+/// When created from `Entropy::crack_times()`, these estimates continue to
+/// use the unsaturated logarithmic magnitude internally even if
+/// `Entropy::guesses()` has saturated at `u64::MAX`.
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "ser", derive(serde::Deserialize, serde::Serialize))]
 pub struct CrackTimes {
     guesses: u64,
+    #[cfg_attr(
+        feature = "ser",
+        serde(deserialize_with = "crate::serialization_utils::deserialize_f64_null_as_nan")
+    )]
+    guesses_log10: f64,
+}
+
+impl PartialEq for CrackTimes {
+    fn eq(&self, other: &Self) -> bool {
+        self.guesses == other.guesses
+            && self.guesses_log10.to_bits() == other.guesses_log10.to_bits()
+    }
+}
+
+impl Eq for CrackTimes {}
+
+impl Hash for CrackTimes {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.guesses.hash(state);
+        self.guesses_log10.to_bits().hash(state);
+    }
 }
 
 impl CrackTimes {
@@ -36,31 +62,62 @@ impl CrackTimes {
     ///
     /// # Arguments
     /// * `guesses` - The number of guesses needed to crack a password.
+    ///
+    /// This constructor only receives the integer guess count. If you already
+    /// have an `Entropy`, prefer `Entropy::crack_times()` so saturated guess
+    /// counts can still retain their unsaturated logarithmic magnitude.
     pub fn new(guesses: u64) -> Self {
-        CrackTimes { guesses }
+        Self::new_with_log10(guesses, (guesses as f64).log10())
     }
 
-    /// Get the amount of guesses needed to crack the password.
+    pub(crate) fn new_with_log10(guesses: u64, guesses_log10: f64) -> Self {
+        CrackTimes {
+            guesses,
+            guesses_log10,
+        }
+    }
+
+    /// Get the integer guess count used for this crack-time estimate.
+    ///
+    /// This value may saturate at `u64::MAX`. Use `Entropy::guesses_log10()`
+    /// when you need the true order of magnitude for very large search spaces.
     pub fn guesses(self) -> u64 {
         self.guesses
     }
 
+    #[cfg(test)]
+    pub(crate) fn guesses_log10(self) -> f64 {
+        self.guesses_log10
+    }
+
     /// Online attack on a service that rate-limits password attempts.
     pub fn online_throttling_100_per_hour(self) -> CrackTimeSeconds {
-        CrackTimeSeconds::Integer(self.guesses.saturating_mul(36))
+        if self.guesses == u64::MAX {
+            CrackTimeSeconds::Float(10f64.powf(self.guesses_log10 + 36.0f64.log10()))
+        } else {
+            CrackTimeSeconds::Integer(self.guesses.saturating_mul(36))
+        }
     }
 
     /// Online attack on a service that doesn't rate-limit,
     /// or where an attacker has outsmarted rate-limiting.
     pub fn online_no_throttling_10_per_second(self) -> CrackTimeSeconds {
-        CrackTimeSeconds::Float(self.guesses as f64 / 10.00)
+        if self.guesses == u64::MAX {
+            CrackTimeSeconds::Float(10f64.powf(self.guesses_log10 - 1.0))
+        } else {
+            CrackTimeSeconds::Float(self.guesses as f64 / 10.00)
+        }
     }
 
     /// Offline attack, assumes multiple attackers.
     /// Proper user-unique salting, and a slow hash function
     /// such as bcrypt, scrypt, PBKDF2.
     pub fn offline_slow_hashing_1e4_per_second(self) -> CrackTimeSeconds {
-        CrackTimeSeconds::Float(self.guesses as f64 / 10_000.00)
+        if self.guesses == u64::MAX {
+            CrackTimeSeconds::Float(10f64.powf(self.guesses_log10 - 4.0))
+        } else {
+            CrackTimeSeconds::Float(self.guesses as f64 / 10_000.00)
+        }
     }
 
     /// Offline attack with user-unique salting but a fast hash function
@@ -68,12 +125,16 @@ impl CrackTimes {
     /// anywhere from one billion to one trillion guesses per second,
     /// depending on number of cores and machines, ballparking at 10 billion per second.
     pub fn offline_fast_hashing_1e10_per_second(self) -> CrackTimeSeconds {
-        CrackTimeSeconds::Float(self.guesses as f64 / 10_000_000_000.00)
+        if self.guesses == u64::MAX {
+            CrackTimeSeconds::Float(10f64.powf(self.guesses_log10 - 10.0))
+        } else {
+            CrackTimeSeconds::Float(self.guesses as f64 / 10_000_000_000.00)
+        }
     }
 }
 
 /// Represents the time to crack a password.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 #[cfg_attr(feature = "ser", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "ser", serde(untagged))]
 pub enum CrackTimeSeconds {
@@ -131,8 +192,11 @@ impl From<CrackTimeSeconds> for std::time::Duration {
     }
 }
 
-pub(crate) fn estimate_attack_times(guesses: u64) -> (CrackTimes, Score) {
-    (CrackTimes::new(guesses), calculate_score(guesses))
+pub(crate) fn estimate_attack_times(guesses: u64, guesses_log10: f64) -> (CrackTimes, Score) {
+    (
+        CrackTimes::new_with_log10(guesses, guesses_log10),
+        calculate_score(guesses),
+    )
 }
 
 fn calculate_score(guesses: u64) -> Score {
@@ -147,5 +211,41 @@ fn calculate_score(guesses: u64) -> Score {
         Score::Three
     } else {
         Score::Four
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{CrackTimeSeconds, CrackTimes};
+
+    #[test]
+    fn test_crack_times_preserves_unsaturated_behavior() {
+        let crack_times = CrackTimes::new(100);
+        assert_eq!(crack_times.guesses(), 100);
+        assert_eq!(
+            crack_times.online_throttling_100_per_hour(),
+            CrackTimeSeconds::Integer(3600)
+        );
+        assert_eq!(
+            crack_times.online_no_throttling_10_per_second(),
+            CrackTimeSeconds::Float(10.0)
+        );
+    }
+
+    #[test]
+    fn test_crack_times_uses_unsaturated_log10_when_guesses_saturate() {
+        let crack_times = CrackTimes::new_with_log10(u64::MAX, 25.0);
+        assert_eq!(crack_times.guesses(), u64::MAX);
+        assert_eq!(crack_times.guesses_log10(), 25.0);
+
+        assert_eq!(
+            crack_times.offline_fast_hashing_1e10_per_second(),
+            CrackTimeSeconds::Float(1e15)
+        );
+
+        let CrackTimeSeconds::Float(seconds) = crack_times.online_throttling_100_per_hour() else {
+            panic!("expected float crack time for saturated guesses");
+        };
+        assert!((seconds.log10() - (25.0 + 36.0f64.log10())).abs() < f64::EPSILON);
     }
 }

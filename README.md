@@ -53,6 +53,9 @@ fn main() {
 
 Other fields available on the returned `Entropy` struct may be viewed in the [full documentation](https://docs.rs/zxcvbn/*/zxcvbn/).
 
+For very large search spaces, `Entropy::guesses()` saturates at `u64::MAX`.
+Use `Entropy::guesses_log10()` when you need the true order of magnitude.
+
 ## Contributing
 
 Any contributions are welcome and will be accepted via pull request on GitHub. Bug reports can be
