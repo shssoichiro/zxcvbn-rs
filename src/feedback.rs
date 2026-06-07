@@ -31,37 +31,39 @@ pub enum Warning {
 
 impl fmt::Display for Warning {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl Warning {
+    /// Return as a string slice.
+    pub fn as_str(&self) -> &str {
         match self {
-            Warning::StraightRowsOfKeysAreEasyToGuess => {
-                write!(f, "Straight rows of keys are easy to guess.")
-            }
+            Warning::StraightRowsOfKeysAreEasyToGuess => "Straight rows of keys are easy to guess.",
             Warning::ShortKeyboardPatternsAreEasyToGuess => {
-                write!(f, "Short keyboard patterns are easy to guess.")
+                "Short keyboard patterns are easy to guess."
             }
-            Warning::RepeatsLikeAaaAreEasyToGuess => {
-                write!(f, "Repeats like \"aaa\" are easy to guess.")
-            }
-            Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess => write!(
-                f,
+            Warning::RepeatsLikeAaaAreEasyToGuess => "Repeats like \"aaa\" are easy to guess.",
+            Warning::RepeatsLikeAbcAbcAreOnlySlightlyHarderToGuess => {
                 "Repeats like \"abcabcabc\" are only slightly harder to guess than \"abc\"."
-            ),
-            Warning::ThisIsATop10Password => write!(f, "This is a top-10 common password."),
-            Warning::ThisIsATop100Password => write!(f, "This is a top-100 common password."),
-            Warning::ThisIsACommonPassword => write!(f, "This is a very common password."),
+            }
+            Warning::ThisIsATop10Password => "This is a top-10 common password.",
+            Warning::ThisIsATop100Password => "This is a top-100 common password.",
+            Warning::ThisIsACommonPassword => "This is a very common password.",
             Warning::ThisIsSimilarToACommonlyUsedPassword => {
-                write!(f, "This is similar to a commonly used password.")
+                "This is similar to a commonly used password."
             }
             Warning::SequencesLikeAbcAreEasyToGuess => {
-                write!(f, "Sequences like abc or 6543 are easy to guess.")
+                "Sequences like abc or 6543 are easy to guess."
             }
-            Warning::RecentYearsAreEasyToGuess => write!(f, "Recent years are easy to guess."),
-            Warning::AWordByItselfIsEasyToGuess => write!(f, "A word by itself is easy to guess."),
-            Warning::DatesAreOftenEasyToGuess => write!(f, "Dates are often easy to guess."),
+            Warning::RecentYearsAreEasyToGuess => "Recent years are easy to guess.",
+            Warning::AWordByItselfIsEasyToGuess => "A word by itself is easy to guess.",
+            Warning::DatesAreOftenEasyToGuess => "Dates are often easy to guess.",
             Warning::NamesAndSurnamesByThemselvesAreEasyToGuess => {
-                write!(f, "Names and surnames by themselves are easy to guess.")
+                "Names and surnames by themselves are easy to guess."
             }
             Warning::CommonNamesAndSurnamesAreEasyToGuess => {
-                write!(f, "Common names and surnames are easy to guess.")
+                "Common names and surnames are easy to guess."
             }
         }
     }
@@ -89,43 +91,44 @@ pub enum Suggestion {
 
 impl fmt::Display for Suggestion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl Suggestion {
+    /// Return as a string slice.
+    pub fn as_str(&self) -> &str {
         match self {
-            Suggestion::UseAFewWordsAvoidCommonPhrases => {
-                write!(f, "Use a few words, avoid common phrases.")
-            }
+            Suggestion::UseAFewWordsAvoidCommonPhrases => "Use a few words, avoid common phrases.",
             Suggestion::NoNeedForSymbolsDigitsOrUppercaseLetters => {
-                write!(f, "No need for symbols, digits, or uppercase letters.")
+                "No need for symbols, digits, or uppercase letters."
             }
             Suggestion::AddAnotherWordOrTwo => {
-                write!(f, "Add another word or two. Uncommon words are better.")
+                "Add another word or two. Uncommon words are better."
             }
             Suggestion::CapitalizationDoesntHelpVeryMuch => {
-                write!(f, "Capitalization doesn't help very much.")
+                "Capitalization doesn't help very much."
             }
-            Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase => write!(
-                f,
+            Suggestion::AllUppercaseIsAlmostAsEasyToGuessAsAllLowercase => {
                 "All-uppercase is almost as easy to guess as all-lowercase."
-            ),
+            }
             Suggestion::ReversedWordsArentMuchHarderToGuess => {
-                write!(f, "Reversed words aren't much harder to guess.")
+                "Reversed words aren't much harder to guess."
             }
-            Suggestion::PredictableSubstitutionsDontHelpVeryMuch => write!(
-                f,
+            Suggestion::PredictableSubstitutionsDontHelpVeryMuch => {
                 "Predictable substitutions like '@' instead of 'a' don't help very much."
-            ),
+            }
             Suggestion::UseALongerKeyboardPatternWithMoreTurns => {
-                write!(f, "Use a longer keyboard pattern with more turns.")
+                "Use a longer keyboard pattern with more turns."
             }
-            Suggestion::AvoidRepeatedWordsAndCharacters => {
-                write!(f, "Avoid repeated words and characters.")
-            }
-            Suggestion::AvoidSequences => write!(f, "Avoid sequences."),
-            Suggestion::AvoidRecentYears => write!(f, "Avoid recent years."),
+            Suggestion::AvoidRepeatedWordsAndCharacters => "Avoid repeated words and characters.",
+            Suggestion::AvoidSequences => "Avoid sequences.",
+            Suggestion::AvoidRecentYears => "Avoid recent years.",
             Suggestion::AvoidYearsThatAreAssociatedWithYou => {
-                write!(f, "Avoid years that are associated with you.")
+                "Avoid years that are associated with you."
             }
             Suggestion::AvoidDatesAndYearsThatAreAssociatedWithYou => {
-                write!(f, "Avoid dates and years that are associated with you.")
+                "Avoid dates and years that are associated with you."
             }
         }
     }
