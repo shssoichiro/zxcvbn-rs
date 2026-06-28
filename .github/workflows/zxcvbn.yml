@@ -9,6 +9,34 @@ on:
       - master
 
 jobs:
+  python-bindings:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.13"]
+        include:
+          - platform: ubuntu-latest
+            python-version: "3.8"
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: Install maturin
+        run: python -m pip install "maturin>=1.5,<2.0"
+      - name: Check formatting
+        run: cargo fmt --manifest-path bindings/python/Cargo.toml -- --check
+      - name: Lint bindings
+        run: cargo clippy --manifest-path bindings/python/Cargo.toml --all-targets -- -D warnings
+      - name: Build and install bindings
+        run: python -m pip install ./bindings/python
+      - name: Run Python tests
+        run: python -m unittest discover -s bindings/python/tests -p "test_*.py"
+
   clippy-rustfmt:
     runs-on: ubuntu-latest
     steps:

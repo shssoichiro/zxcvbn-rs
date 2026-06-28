@@ -1,0 +1,17 @@
+[package]
+name = "zxcvbn-rs"
+version = "3.1.1"
+edition = "2021"
+description = "Python bindings for zxcvbn-rs"
+license = "MIT"
+repository = "https://github.com/shssoichiro/zxcvbn-rs"
+
+[lib]
+name = "_zxcvbn_rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.21", features = ["abi3-py38", "extension-module"] }
+pythonize = "0.21"
+serde = { version = "1", features = ["derive"] }
+zxcvbn = { path = "../..", features = ["ser"] }
