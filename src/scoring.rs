@@ -48,6 +48,30 @@ impl Display for Score {
     }
 }
 
+impl PartialEq<u8> for Score {
+    fn eq(&self, other: &u8) -> bool {
+        *self as u8 == *other
+    }
+}
+
+impl PartialEq<Score> for u8 {
+    fn eq(&self, other: &Score) -> bool {
+        *self == *other as u8
+    }
+}
+
+impl PartialOrd<u8> for Score {
+    fn partial_cmp(&self, other: &u8) -> Option<cmp::Ordering> {
+        (*self as u8).partial_cmp(other)
+    }
+}
+
+impl PartialOrd<Score> for u8 {
+    fn partial_cmp(&self, other: &Score) -> Option<cmp::Ordering> {
+        self.partial_cmp(&(*other as u8))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct GuessCalculation {
     /// Estimated guesses needed to crack the password.
@@ -1525,6 +1549,39 @@ mod tests {
             };
             assert_eq!(scoring::l33t_variations(&p, word), variants);
         }
+    }
+
+    #[test]
+    fn test_score_partial_eq_u8() {
+        assert_eq!(scoring::Score::Zero, 0);
+        assert_eq!(scoring::Score::One, 1);
+        assert_eq!(scoring::Score::Two, 2);
+        assert_eq!(scoring::Score::Three, 3);
+        assert_eq!(scoring::Score::Four, 4);
+
+        assert_eq!(0, scoring::Score::Zero);
+        assert_eq!(1, scoring::Score::One);
+        assert_eq!(2, scoring::Score::Two);
+        assert_eq!(3, scoring::Score::Three);
+        assert_eq!(4, scoring::Score::Four);
+    }
+
+    #[test]
+    fn test_score_partial_ord_u8() {
+        assert!(scoring::Score::Zero < 1);
+        assert!(scoring::Score::One > 0);
+        assert!(scoring::Score::Two >= 1);
+        assert!(scoring::Score::Three <= 4);
+
+        assert!(0 < scoring::Score::One);
+        assert!(1 > scoring::Score::Zero);
+        assert!(1 <= scoring::Score::Two);
+        assert!(4 >= scoring::Score::Three);
+
+        assert!(!(scoring::Score::Zero < 0));
+        assert!(!(scoring::Score::Four > 4));
+        assert!(!(0 > scoring::Score::Zero));
+        assert!(!(4 < scoring::Score::Four));
     }
 
     #[cfg(feature = "ser")]
