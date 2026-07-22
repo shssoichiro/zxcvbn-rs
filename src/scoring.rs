@@ -502,6 +502,7 @@ fn uppercase_variations(token: &str) -> u64 {
         || token.chars().last().unwrap().is_uppercase())
         && token.chars().filter(|&c| c.is_uppercase()).count() == 1)
         || token.chars().all(char::is_uppercase)
+        || token.to_uppercase().as_str() == token
     {
         return 2;
     }
@@ -549,6 +550,7 @@ fn uppercase_variations_log10(token: &str) -> f64 {
         || token.chars().last().unwrap().is_uppercase())
         && token.chars().filter(|&c| c.is_uppercase()).count() == 1)
         || token.chars().all(char::is_uppercase)
+        || token.to_uppercase().as_str() == token
     {
         return 2.0f64.log10();
     }
@@ -1359,6 +1361,26 @@ mod tests {
         };
         let token = "AAAaaa";
         assert_eq!(p.estimate(token), 32 * scoring::uppercase_variations(token));
+    }
+
+    #[test]
+    fn test_uppercase_variations_allcaps_doesnt_weaken() {
+        // an all caps token should always have at least the same number of
+        // variations as an all lower token
+        let lower = "alice123";
+        let upper = "ALICE123";
+
+        let a = scoring::uppercase_variations(lower);
+        let b = scoring::uppercase_variations(upper);
+        assert!(a <= b);
+        assert!(a != 0);
+        assert!(b != 0);
+
+        let a = scoring::uppercase_variations_log10(lower);
+        let b = scoring::uppercase_variations_log10(upper);
+        assert!(a <= b);
+        assert!(a != f64::NEG_INFINITY);
+        assert!(b != f64::NEG_INFINITY);
     }
 
     #[test]
