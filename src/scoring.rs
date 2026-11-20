@@ -163,7 +163,7 @@ pub fn most_guessable_match_sequence(
             pi_log10 += optimal.pi_log10[m.i - 1][&(len - 1)];
         }
         // calculate the minimization func
-        let mut guesses = (factorial(len) as u64).saturating_mul(pi);
+        let mut guesses = factorial(len).saturating_mul(pi);
         let mut guesses_log10 = log10_factorial(len) + pi_log10;
         if !exclude_additive {
             let additive = if len == 1 {
@@ -316,8 +316,8 @@ pub fn most_guessable_match_sequence(
     }
 }
 
-fn factorial(n: usize) -> usize {
-    (1..=n).product()
+fn factorial(n: usize) -> u64 {
+    (1..=n as u64).fold(1, |acc, x| acc.saturating_mul(x))
 }
 
 fn estimate_guesses(m: &mut Match, password: &str) -> u64 {
@@ -476,9 +476,9 @@ impl Estimator for DictionaryPattern {
         self.uppercase_variations = uppercase_variations;
         self.l33t_variations = l33t_variations;
         self.base_guesses
-            * self.uppercase_variations
-            * self.l33t_variations
-            * if self.reversed { 2 } else { 1 }
+            .saturating_mul(self.uppercase_variations)
+            .saturating_mul(self.l33t_variations)
+            .saturating_mul(if self.reversed { 2 } else { 1 })
     }
 }
 
@@ -512,14 +512,14 @@ fn uppercase_variations(token: &str) -> u64 {
     let lower = token.chars().filter(|c| c.is_lowercase()).count();
     (1..=cmp::min(upper, lower))
         .map(|i| n_ck(upper + lower, i))
-        .sum()
+        .fold(0, u64::saturating_add)
 }
 
 fn l33t_variations(pattern: &DictionaryPattern, token: &str) -> u64 {
     if !pattern.l33t {
         return 1;
     }
-    let mut variations = 1;
+    let mut variations: u64 = 1;
     for (subbed, unsubbed) in pattern.sub.as_ref().unwrap() {
         // lower-case match.token before calculating: capitalization shouldn't affect l33t calc.
         let token = token.to_lowercase();
@@ -529,13 +529,15 @@ fn l33t_variations(pattern: &DictionaryPattern, token: &str) -> u64 {
             // for this sub, password is either fully subbed (444) or fully unsubbed (aaa)
             // treat that as doubling the space (attacker needs to try fully subbed chars in addition to
             // unsubbed.)
-            variations *= 2;
+            variations = variations.saturating_mul(2);
         } else {
             // this case is similar to capitalization:
             // with aa44a, U = 3, S = 2, attacker needs to try unsubbed + one sub + two subs
             let p = cmp::min(unsubbed, subbed);
-            let possibilities: u64 = (1..=p).map(|i| n_ck(unsubbed + subbed, i)).sum();
-            variations *= possibilities;
+            let possibilities = (1..=p)
+                .map(|i| n_ck(unsubbed + subbed, i))
+                .fold(0, u64::saturating_add);
+            variations = variations.saturating_mul(possibilities);
         }
     }
     variations
@@ -616,7 +618,7 @@ impl Estimator for SpatialPattern {
                 guesses = guesses.saturating_add(
                     n_ck(i - 1, j - 1)
                         .saturating_mul(starts)
-                        .saturating_mul(degree.pow(j as u32)),
+                        .saturating_mul(degree.saturating_pow(j as u32)),
                 );
             }
         }
@@ -630,7 +632,7 @@ impl Estimator for SpatialPattern {
             } else {
                 let shifted_variations: u64 = (1..=cmp::min(shifted_count, unshifted_count))
                     .map(|i| n_ck(shifted_count + unshifted_count, i))
-                    .sum();
+                    .fold(0, u64::saturating_add);
                 guesses = guesses.saturating_mul(shifted_variations);
             }
         }
@@ -869,6 +871,14 @@ mod tests {
             }
             TestResult::from_bool(scoring::n_ck(n, k) == scoring::n_ck(n-1, k-1) + scoring::n_ck(n-1, k))
         }
+    }
+
+    #[test]
+    fn test_factorial_saturates() {
+        assert_eq!(scoring::factorial(0), 1);
+        assert_eq!(scoring::factorial(20), 2_432_902_008_176_640_000);
+        assert_eq!(scoring::factorial(21), u64::MAX);
+        assert_eq!(scoring::factorial(100), u64::MAX);
     }
 
     #[test]
