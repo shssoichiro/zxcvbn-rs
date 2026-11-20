@@ -213,6 +213,40 @@ mod tests {
     #[cfg(target_arch = "wasm32")]
     use wasm_bindgen_test::wasm_bindgen_test;
 
+    #[test]
+    fn test_zxcvbn_long_match_sequence_doesnt_panic() {
+        // The scorer can try match sequences longer than 20 here, and 21! overflows a u64.
+        // Whether it does depends on HashMap iteration order, so try a few times.
+        let password = "baa".repeat(28);
+        for _ in 0..32 {
+            assert!(zxcvbn(&password, &[]).guesses_log10().is_finite());
+        }
+    }
+
+    #[test]
+    fn test_zxcvbn_long_spatial_match_doesnt_panic() {
+        // A qwerty spatial match that turns on every key and shifts every other one:
+        // degree^turns overflows a u64 from 17 repeats, the shifted variations from 50.
+        for repeats in [17, 50] {
+            let password = "aZ".repeat(repeats);
+            assert!(zxcvbn(&password, &[]).guesses_log10().is_finite());
+        }
+    }
+
+    #[test]
+    fn test_zxcvbn_long_dictionary_match_doesnt_panic() {
+        // Long user inputs give dictionary matches whose uppercase and l33t variation
+        // counts are sums of binomials that overflow a u64.
+        let cases = [
+            ("aZ".repeat(50), "az".repeat(50)),
+            ("a4".repeat(50), "a".repeat(100)),
+        ];
+        for (password, user_input) in &cases {
+            let entropy = zxcvbn(password, &[user_input.as_str()]);
+            assert!(entropy.guesses_log10().is_finite());
+        }
+    }
+
     quickcheck! {
         fn test_zxcvbn_doesnt_panic(password: String, user_inputs: Vec<String>) -> TestResult {
             let inputs = user_inputs.iter().map(|s| s.as_ref()).collect::<Vec<&str>>();
