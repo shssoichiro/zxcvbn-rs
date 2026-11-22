@@ -104,11 +104,7 @@ lazy_static! {
         }
         let unix_millis = unsafe { unix_time_milliseconds_imported() };
 
-        use chrono::Datelike;
-        chrono::DateTime::<chrono::Utc>::from(
-            std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_millis(unix_millis),
-        )
-        .year()
+        (time::OffsetDateTime::UNIX_EPOCH + std::time::Duration::from_millis(unix_millis)).year()
     };
 }
 
